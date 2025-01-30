@@ -31,6 +31,7 @@ import {
   FontAwesome5 
 } from '@expo/vector-icons';
 
+
 const wallets = [
   inAppWallet({
     auth: {
@@ -67,10 +68,12 @@ const wallets = [
   createWallet("io.zerion.wallet"),
 ];
 
+
 const thirdwebAuth = createAuth({
   domain: "localhost:3000",
   client,
 });
+
 
 export default function HomeScreen() {
   const theme = useColorScheme();
@@ -87,14 +90,18 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.mainContainer}>
-      <View style={styles.header}>
+    <View style={styles.header}>
+      <View style={styles.connectSection}>
         <ConnectButton
           client={client}
           theme={theme || "dark"}
           wallets={wallets}
           chain={baseSepolia}
         />
-        <CustomConnectUI />
+        {/* <View style={styles.walletInfo}>
+          <CustomConnectUI />
+        </View> */}
+      </View>
         {/* yet to change icons used */}
         <View style={styles.headerIcons}>
           <Ionicons name="notifications-outline" size={24} color={theme === 'dark' ? '#fff' : '#000'} />
@@ -102,6 +109,7 @@ export default function HomeScreen() {
           <MaterialCommunityIcons name="history" size={24} color={theme === 'dark' ? '#fff' : '#000'} />
         </View>
       </View>
+
       <ThemedView style={styles.container}>
         <View style={styles.profileSection}>
           <View style={styles.avatarContainer}>
@@ -228,33 +236,32 @@ const AssetTile: React.FC<{ asset: Asset }> = ({ asset }) => (
 
 
 
-// to change positioning
-const CustomConnectUI = () => {
-  const wallet = useActiveWallet();
-  const account = useActiveAccount();
-  const [email, setEmail] = useState<string | undefined>();
-  const { disconnect } = useDisconnect();
-  useEffect(() => {
-    if (wallet && wallet.id === "inApp") {
-      getUserEmail({ client }).then(setEmail);
-    }
-  }, [wallet]);
+// const CustomConnectUI = () => {
+//   const wallet = useActiveWallet();
+//   const account = useActiveAccount();
+//   const [email, setEmail] = useState<string | undefined>();
+//   const { disconnect } = useDisconnect();
+//   useEffect(() => {
+//     if (wallet && wallet.id === "inApp") {
+//       getUserEmail({ client }).then(setEmail);
+//     }
+//   }, [wallet]);
 
-  return wallet && account ? (
-    <View>
-      <ThemedText>Connected as {shortenAddress(account.address)}</ThemedText>
-      {email && <ThemedText type="subtext">{email}</ThemedText>}
-      <View style={{ height: 16 }} />
-      <ThemedButton onPress={() => disconnect(wallet)} title="Disconnect" />
-    </View>
-  ) : (
-    <>
-      {/* <ConnectWithGoogle />
-      <ConnectWithMetaMask />
-      <ConnectWithPasskey /> */}
-    </>
-  );
-};
+//   return wallet && account ? (
+//     <View>
+//       <ThemedText>Connected as {shortenAddress(account.address)}</ThemedText>
+//       {email && <ThemedText type="subtext">{email}</ThemedText>}
+//       <View style={{ height: 16 }} />
+//       <ThemedButton onPress={() => disconnect(wallet)} title="Disconnect" />
+//     </View>
+//   ) : (
+//     <>
+//       {/* <ConnectWithGoogle />
+//       <ConnectWithMetaMask />
+//       <ConnectWithPasskey /> */}
+//     </>
+//   );
+// };
 
 const styles = StyleSheet.create({
   mainContainer: {
@@ -268,14 +275,29 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     paddingHorizontal: 16,
     paddingVertical: 12,
     backgroundColor: '#fff',
+    minHeight: 60,
   },
+  connectSection: {
+    flex: 1,
+    marginRight: 16,
+  },
+  // walletInfo: {
+  //   position: 'absolute',
+  //   top: '100%',
+  //   left: 0,
+  //   right: 0,
+  //   backgroundColor: '#fff',
+  //   zIndex: 1,
+  //   paddingTop: 8,
+  // },
   headerIcons: {
     flexDirection: 'row',
     gap: 12,
+    alignSelf: 'center',
   },
   profileSection: {
     alignItems: 'center',
