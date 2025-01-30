@@ -104,9 +104,9 @@ export default function HomeScreen() {
       </View>
         {/* yet to change icons used */}
         <View style={styles.headerIcons}>
-          <Ionicons name="notifications-outline" size={24} color={theme === 'dark' ? '#fff' : '#000'} />
-          <MaterialCommunityIcons name="upload-outline" size={24} color={theme === 'dark' ? '#fff' : '#000'} />
-          <MaterialCommunityIcons name="history" size={24} color={theme === 'dark' ? '#fff' : '#000'} />
+          <MaterialCommunityIcons name="upload-outline"  size={24} color={theme === 'dark' ? '#fff' : '#000'} />
+          <MaterialCommunityIcons name="download-outline" size={24} color={theme === 'dark' ? '#fff' : '#000'} /> 
+          <MaterialCommunityIcons name="history" size={24} color={theme === 'dark' ? '#fff' : '#000'} /> 
         </View>
       </View>
 
