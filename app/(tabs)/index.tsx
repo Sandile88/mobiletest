@@ -25,6 +25,11 @@ import { createWallet } from "thirdweb/wallets";
 import { baseSepolia, ethereum } from "thirdweb/chains";
 import { createAuth } from "thirdweb/auth";
 import React from "react";
+import { 
+  Ionicons,
+  MaterialCommunityIcons,
+  FontAwesome5 
+} from '@expo/vector-icons';
 
 const wallets = [
   inAppWallet({
@@ -68,18 +73,35 @@ const thirdwebAuth = createAuth({
 });
 
 export default function HomeScreen() {
-  const account = useActiveAccount();
   const theme = useColorScheme();
+  const wallet = useActiveWallet();
+  const account = useActiveAccount();
+  const [email, setEmail] = useState<string>();
+  const { disconnect } = useDisconnect();
+
+  useEffect(() => {
+    if (wallet && wallet.id === "inApp") {
+      getUserEmail({ client }).then(setEmail);
+    }
+  }, [wallet]);
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: "#A1CEDC", dark: "#1D3D47" }}
-      headerImage={
-        <Image
-          source={require("@/assets/images/title.png")}
-          style={styles.headerImage}
+    <View style={styles.mainContainer}>
+      <View style={styles.header}>
+        <ConnectButton
+          client={client}
+          theme={theme || "dark"}
+          wallets={wallets}
+          chain={baseSepolia}
         />
-      }
-    >
+        <CustomConnectUI />
+        {/* yet to change icons used */}
+        <View style={styles.headerIcons}>
+          <Ionicons name="notifications-outline" size={24} color={theme === 'dark' ? '#fff' : '#000'} />
+          <MaterialCommunityIcons name="upload-outline" size={24} color={theme === 'dark' ? '#fff' : '#000'} />
+          <MaterialCommunityIcons name="history" size={24} color={theme === 'dark' ? '#fff' : '#000'} />
+        </View>
+      </View>
       <ThemedView style={styles.container}>
         <View style={styles.profileSection}>
           <View style={styles.avatarContainer}>
@@ -87,14 +109,33 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        <View style={styles.balanceSection}>
-          <ConnectButton
-            client={client}
-            theme={theme || "dark"}
-            wallets={wallets}
-            chain={baseSepolia}
+        <View style={styles.balanceGrid}>
+          <BalanceDisplay label="Balance" amount="0.00" />
+          <BalanceDisplay label="Proof Balance" amount="0.00" />
+          <BalanceDisplay label="Total Balance" amount="0.00" />
+        </View>
+
+        <View style={styles.actionButtonsContainer}>
+          <ActionButton 
+            iconName="paper-plane" 
+            iconFamily="FontAwesome5" 
+            label="Pay" 
           />
-          <CustomConnectUI />
+          <ActionButton 
+            iconName="wallet" 
+            iconFamily="Ionicons" 
+            label="Receive" 
+          />
+          <ActionButton 
+            iconName="arrow-down-circle" 
+            iconFamily="Ionicons" 
+            label="Deposit" 
+          />
+          <ActionButton 
+            iconName="arrow-up-circle" 
+            iconFamily="Ionicons" 
+            label="Withdraw" 
+          />
         </View>
 
         <ThemedView style={styles.assetsContainer}>
@@ -106,9 +147,10 @@ export default function HomeScreen() {
           </View>
         </ThemedView>
       </ThemedView>
-    </ParallaxScrollView>
+    </View>
   );
 }
+
 
 
 interface Asset {
@@ -133,31 +175,60 @@ const assets: Asset[] = [
   },
 ];
 
-const AssetTile: React.FC<{ asset: Asset }> = ({ asset }) => {
+const ActionButton = ({ iconName, iconFamily = "Ionicons", label }: { 
+  iconName: string; 
+  iconFamily?: "Ionicons" | "MaterialCommunityIcons" | "FontAwesome5";
+  label: string;
+}) => {
+  const IconComponent = {
+    Ionicons,
+    MaterialCommunityIcons,
+    FontAwesome5
+  }[iconFamily];
+
   return (
-    <ThemedView style={styles.assetTile}>
-      <View style={styles.assetLeftSection}>
-        <Image 
-          source={typeof asset.imageUrl === 'string' ? { uri: asset.imageUrl } : asset.imageUrl}
-          style={styles.assetImage}
-        />
-        <View style={styles.assetInfo}>
-          <ThemedText style={styles.assetName}>{asset.name}</ThemedText>
-          <ThemedText style={styles.assetValue}>
-            {asset.name === 'uZAR' ? `R${asset.value.toFixed(2)}` : `$${asset.value.toFixed(2)}`}
-          </ThemedText>
-        </View>
+    <View style={styles.actionButton}>
+      <View style={styles.actionIcon}>
+        <IconComponent name={iconName} size={24} color="#fff" />
       </View>
-      <ThemedText style={styles.assetBalance}>
-        {asset.name === 'uZAR' ? `R${asset.balance.toFixed(2)}` : `$${asset.balance.toFixed(2)}`}
-      </ThemedText>
-    </ThemedView>
+      <ThemedText style={styles.actionLabel}>{label}</ThemedText>
+    </View>
   );
 };
 
 
+const BalanceDisplay = ({ label, amount }: { label: string; amount: string }) => (
+  <View style={styles.balanceContainer}>
+    <ThemedText style={styles.balanceLabel}>{label}</ThemedText>
+    <ThemedText style={styles.balanceAmount}>{amount}</ThemedText>
+  </View>
+);
 
 
+
+const AssetTile: React.FC<{ asset: Asset }> = ({ asset }) => (
+  <ThemedView style={styles.assetTile}>
+    <View style={styles.assetLeftSection}>
+      <Image 
+        source={typeof asset.imageUrl === 'string' ? { uri: asset.imageUrl } : asset.imageUrl}
+        style={styles.assetImage}
+      />
+      <View style={styles.assetInfo}>
+        <ThemedText style={styles.assetName}>{asset.name}</ThemedText>
+        <ThemedText style={styles.assetValue}>
+          {asset.name === 'uZAR' ? `R${asset.value.toFixed(2)}` : `$${asset.value.toFixed(2)}`}
+        </ThemedText>
+      </View>
+    </View>
+    <ThemedText style={styles.assetBalance}>
+      {asset.name === 'uZAR' ? `R${asset.balance.toFixed(2)}` : `$${asset.balance.toFixed(2)}`}
+    </ThemedText>
+  </ThemedView>
+);
+
+
+
+// to change positioning
 const CustomConnectUI = () => {
   const wallet = useActiveWallet();
   const account = useActiveAccount();
@@ -185,58 +256,80 @@ const CustomConnectUI = () => {
   );
 };
 
-
 const styles = StyleSheet.create({
+  mainContainer: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
   container: {
     flex: 1,
     padding: 20,
   },
-  headerImage: {
-    height: "100%",
-    width: "100%",
-    position: "absolute",
-    bottom: 0,
-    left: 0,
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#fff',
+  },
+  headerIcons: {
+    flexDirection: 'row',
+    gap: 12,
   },
   profileSection: {
     alignItems: 'center',
-    marginVertical: 32,
+    marginVertical: 24,
   },
   avatarContainer: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    backgroundColor: '#A1CEDC',
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#E8E8E8',
     justifyContent: 'center',
     alignItems: 'center',
   },
   avatarText: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: 'bold',
   },
-  balanceSection: {
-    marginBottom: 32,
+  balanceGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 24,
   },
-  connectContainer: {
-    marginTop: 16,
-    padding: 16,
-    borderRadius: 12,
-    backgroundColor: '#f5f5f5',
+  balanceContainer: {
+    alignItems: 'center',
+    flex: 1,
   },
-  accountInfo: {
-    marginBottom: 12,
-  },
-  addressText: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  emailText: {
+  balanceLabel: {
     fontSize: 14,
     color: '#666',
-    marginTop: 4,
+    marginBottom: 4,
   },
-  disconnectButton: {
-    marginTop: 8,
+  balanceAmount: {
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  actionButtonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 32,
+  },
+  actionButton: {
+    alignItems: 'center',
+  },
+  actionIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#000',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  actionLabel: {
+    fontSize: 12,
   },
   assetsContainer: {
     flex: 1,
