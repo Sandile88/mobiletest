@@ -67,9 +67,6 @@ const thirdwebAuth = createAuth({
   client,
 });
 
-// fake login state, this should be returned from the backend
-let isLoggedIn = false;
-
 export default function HomeScreen() {
   const account = useActiveAccount();
   const theme = useColorScheme();
@@ -79,113 +76,87 @@ export default function HomeScreen() {
       headerImage={
         <Image
           source={require("@/assets/images/title.png")}
-          style={styles.reactLogo}
+          style={styles.headerImage}
         />
       }
     >
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Connecting Wallets</ThemedText>
+      <ThemedView style={styles.container}>
+        <View style={styles.profileSection}>
+          <View style={styles.avatarContainer}>
+            <ThemedText style={styles.avatarText}>JD</ThemedText>
+          </View>
+        </View>
+
+        <View style={styles.balanceSection}>
+          <ConnectButton
+            client={client}
+            theme={theme || "dark"}
+            wallets={wallets}
+            chain={baseSepolia}
+          />
+          <CustomConnectUI />
+        </View>
+
+        <ThemedView style={styles.assetsContainer}>
+          <ThemedText style={styles.assetsTitle}>Assets</ThemedText>
+          <View style={styles.assetsList}>
+            {assets.map((asset, index) => (
+              <AssetTile key={index} asset={asset} />
+            ))}
+          </View>
+        </ThemedView>
       </ThemedView>
-      <View style={{ gap: 2 }}>
-        <ThemedText type="subtitle">{`<ConnectButton />`}</ThemedText>
-        <ThemedText type="subtext">
-          Configurable button + modal, handles both connection and connected
-          state. Example below has Smart Accounts + sponsored transactions
-          enabled.
-        </ThemedText>
-      </View>
-      <ConnectButton
-        client={client}
-        theme={theme || "dark"}
-        wallets={wallets}
-        chain={baseSepolia}
-      />
-      <View style={{ gap: 2 }}>
-        <ThemedText type="subtitle">{`Themed <ConnectButton />`}</ThemedText>
-        <ThemedText type="subtext">
-          Styled the Connect Button to match your app.
-        </ThemedText>
-      </View>
-      <ConnectButton
-        client={client}
-        theme={lightTheme({
-          colors: {
-            primaryButtonBg: "#1e8449",
-            modalBg: "#1e8449",
-            borderColor: "#196f3d",
-            accentButtonBg: "#196f3d",
-            primaryText: "#ffffff",
-            secondaryIconColor: "#a7b8b9",
-            secondaryText: "#a7b8b9",
-            secondaryButtonBg: "#196f3d",
-          },
-        })}
-        wallets={[
-          createWallet("io.metamask"),
-          createWallet("com.coinbase.wallet"),
-          createWallet("me.rainbow"),
-          createWallet("com.trustwallet.app"),
-          createWallet("io.zerion.wallet"),
-          createWallet("xyz.argent"),
-          createWallet("com.okex.wallet"),
-          createWallet("com.zengo")
-        ]}
-        connectButton={{
-          label: "Sign in to ✨ MyApp",
-        }}
-        connectModal={{
-          title: "✨ MyApp Login",
-        }}
-      />
-      <View style={{ height: 16 }} />
-      <View style={{ gap: 2 }}>
-        <ThemedText type="subtitle">{`<ConnectEmbed />`}</ThemedText>
-        <ThemedText type="subtext">
-          Embeddable connection component in any screen. Example below is
-          configured with a specific list of EOAs + SIWE.
-        </ThemedText>
-      </View>
-      <ConnectEmbed
-        client={client}
-        theme={theme || "dark"}
-        chain={ethereum}
-        wallets={wallets}
-        auth={{
-          async doLogin(params) {
-            // fake delay
-            await new Promise((resolve) => setTimeout(resolve, 2000));
-            const verifiedPayload = await thirdwebAuth.verifyPayload(params);
-            isLoggedIn = verifiedPayload.valid;
-          },
-          async doLogout() {
-            isLoggedIn = false;
-          },
-          async getLoginPayload(params) {
-            return thirdwebAuth.generatePayload(params);
-          },
-          async isLoggedIn(address) {
-            return isLoggedIn;
-          },
-        }}
-      />
-      {account && (
-        <ThemedText type="subtext">
-          ConnectEmbed does not render when connected, use the `onConnect` prop
-          to navigate to a new screen instead.
-        </ThemedText>
-      )}
-      <View style={{ height: 16 }} />
-      <View style={{ gap: 2 }}>
-        <ThemedText type="subtitle">{`useConnect()`}</ThemedText>
-        <ThemedText type="subtext">
-          Hooks to build your own UI. Example below connects to a smart Google
-          account or metamask EOA.
-        </ThemedText>
-      </View>
-      <CustomConnectUI />
     </ParallaxScrollView>
   );
 }
+
+
+interface Asset {
+  imageUrl: string;
+  balance: number;
+  name: string;
+  value: number;
+}
+
+const assets: Asset[] = [
+  {
+    balance: 0,
+    imageUrl: require("@/assets/images/uzar.png"),
+    name: "uZAR",
+    value: 1.00,
+  },
+  {
+    balance: 0,
+    value: 0.99,
+    imageUrl: "https://s2.coinmarketcap.com/static/img/coins/64x64/825.png",
+    name: "USDT",
+  },
+];
+
+const AssetTile: React.FC<{ asset: Asset }> = ({ asset }) => {
+  return (
+    <ThemedView style={styles.assetTile}>
+      <View style={styles.assetLeftSection}>
+        <Image 
+          source={typeof asset.imageUrl === 'string' ? { uri: asset.imageUrl } : asset.imageUrl}
+          style={styles.assetImage}
+        />
+        <View style={styles.assetInfo}>
+          <ThemedText style={styles.assetName}>{asset.name}</ThemedText>
+          <ThemedText style={styles.assetValue}>
+            {asset.name === 'uZAR' ? `R${asset.value.toFixed(2)}` : `$${asset.value.toFixed(2)}`}
+          </ThemedText>
+        </View>
+      </View>
+      <ThemedText style={styles.assetBalance}>
+        {asset.name === 'uZAR' ? `R${asset.balance.toFixed(2)}` : `$${asset.balance.toFixed(2)}`}
+      </ThemedText>
+    </ThemedView>
+  );
+};
+
+
+
 
 const CustomConnectUI = () => {
   const wallet = useActiveWallet();
@@ -207,123 +178,108 @@ const CustomConnectUI = () => {
     </View>
   ) : (
     <>
-      <ConnectWithGoogle />
+      {/* <ConnectWithGoogle />
       <ConnectWithMetaMask />
-      <ConnectWithPasskey />
+      <ConnectWithPasskey /> */}
     </>
   );
 };
 
-const ConnectWithGoogle = () => {
-  const { connect, isConnecting } = useConnect();
-  return (
-    <ThemedButton
-      title="Connect with Google"
-      loading={isConnecting}
-      loadingTitle="Connecting..."
-      onPress={() => {
-        connect(async () => {
-          const w = inAppWallet({
-            smartAccount: {
-              chain,
-              sponsorGas: true,
-            },
-          });
-          await w.connect({
-            client,
-            strategy: "google",
-          });
-          return w;
-        });
-      }}
-    />
-  );
-};
-
-const ConnectWithMetaMask = () => {
-  const { connect, isConnecting } = useConnect();
-  return (
-    <ThemedButton
-      title="Connect with MetaMask"
-      variant="secondary"
-      loading={isConnecting}
-      loadingTitle="Connecting..."
-      onPress={() => {
-        connect(async () => {
-          const w = createWallet("io.metamask");
-          await w.connect({
-            client,
-          });
-          return w;
-        });
-      }}
-    />
-  );
-};
-
-const ConnectWithPasskey = () => {
-  const { connect } = useConnect();
-  return (
-    <ThemedButton
-      title="Login with Passkey"
-      onPress={() => {
-        connect(async () => {
-          const hasPasskey = await hasStoredPasskey(client);
-          const w = inAppWallet({
-            auth: {
-              options: ["passkey"],
-              passkeyDomain: "thirdweb.com",
-            },
-          });
-          await w.connect({
-            client,
-            strategy: "passkey",
-            type: hasPasskey ? "sign-in" : "sign-up",
-          });
-          return w;
-        });
-      }}
-    />
-  );
-};
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
+  container: {
+    flex: 1,
+    padding: 20,
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
-  },
-  reactLogo: {
+  headerImage: {
     height: "100%",
     width: "100%",
+    position: "absolute",
     bottom: 0,
     left: 0,
-    position: "absolute",
   },
-  rowContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 24,
-    justifyContent: "space-evenly",
+  profileSection: {
+    alignItems: 'center',
+    marginVertical: 32,
   },
-  tableContainer: {
-    width: "100%",
+  avatarContainer: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: '#A1CEDC',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  tableRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 4,
+  avatarText: {
+    fontSize: 22,
+    fontWeight: 'bold',
   },
-  leftColumn: {
+  balanceSection: {
+    marginBottom: 32,
+  },
+  connectContainer: {
+    marginTop: 16,
+    padding: 16,
+    borderRadius: 12,
+    backgroundColor: '#f5f5f5',
+  },
+  accountInfo: {
+    marginBottom: 12,
+  },
+  addressText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  emailText: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 4,
+  },
+  disconnectButton: {
+    marginTop: 8,
+  },
+  assetsContainer: {
     flex: 1,
-    textAlign: "left",
   },
-  rightColumn: {
-    flex: 1,
-    textAlign: "right",
+  assetsTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    marginBottom: 16,
+  },
+  assetsList: {
+    gap: 12,
+  },
+  assetTile: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 12,
+    backgroundColor: '#f5f5f5',
+  },
+  assetLeftSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  assetImage: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+  },
+  assetInfo: {
+    marginLeft: 12,
+  },
+  assetName: {
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  assetValue: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 4,
+  },
+  assetBalance: {
+    fontSize: 18,
+    fontWeight: '600',
   },
 });
