@@ -30,7 +30,7 @@ import {
   MaterialCommunityIcons,
   FontAwesome5 
 } from '@expo/vector-icons';
-
+import { useRouter } from "expo-router";
 
 const wallets = [
   inAppWallet({
@@ -81,6 +81,7 @@ export default function HomeScreen() {
   const account = useActiveAccount();
   const [email, setEmail] = useState<string>();
   const { disconnect } = useDisconnect();
+  const router = useRouter();
 
   useEffect(() => {
     if (wallet && wallet.id === "inApp") {
@@ -104,11 +105,21 @@ export default function HomeScreen() {
       </View>
         {/* yet to change icons used */}
         <View style={styles.headerIcons}>
-          <MaterialCommunityIcons name="upload-outline"  size={24} color={theme === 'dark' ? '#fff' : '#000'} />
-          <MaterialCommunityIcons name="download-outline" size={24} color={theme === 'dark' ? '#fff' : '#000'} /> 
-          <MaterialCommunityIcons name="history" size={24} color={theme === 'dark' ? '#fff' : '#000'} /> 
+          <MaterialCommunityIcons 
+            name="upload-outline"  size={24} 
+            color={theme === 'dark' ? '#fff' : '#000'}  
+            onPress={() => router.push("/addProof")} />
+          <MaterialCommunityIcons 
+            name="download-outline" size={24} 
+            color={theme === 'dark' ? '#fff' : '#000'} 
+            onPress={() => router.push("/downloadProof")} /> 
+          <MaterialCommunityIcons 
+            name="history" size={24} 
+            color={theme === 'dark' ? '#fff' : '#000'} 
+            onPress={() => router.push("/historyProof")} /> 
         </View>
       </View>
+
 
       <ThemedView style={styles.container}>
         <View style={styles.profileSection}>
