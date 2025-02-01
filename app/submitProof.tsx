@@ -1,9 +1,8 @@
-
 import React, { useState } from 'react';
 import { View, TextInput, StyleSheet, TouchableOpacity, Text, ToastAndroid } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { useNavigation } from '@react-navigation/native';
-import { markProofAsSubmitted } from '@/services/proofService';
+import { claimProof } from '@/services/proofService';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 type RootStackParamList = {
@@ -23,27 +22,25 @@ export default function SubmitProofScreen() {
         return;
       }
 
-      await markProofAsSubmitted(proofText.trim());
-      ToastAndroid.show('Proof claimed successfully!', ToastAndroid.SHORT);
-      navigation.replace('historyProof'); // here using replace to prevent going back to this screen
-    } catch (error) {
+      const claimedAmount = await claimProof(proofText.trim());
+      ToastAndroid.show(`Successfully claimed ${claimedAmount} tokens!`, ToastAndroid.SHORT);
+      navigation.goBack(); // going back to previous screen instead of history
+    } catch (error: any) {
       console.error('Error submitting proof:', error);
-      ToastAndroid.show('Failed to submit proof. Please check the code and try again.', ToastAndroid.LONG);
+      ToastAndroid.show(error.message || 'Failed to submit proof', ToastAndroid.LONG);
     }
   };
 
   return (
     <View style={styles.container}>
       <View style={styles.modalContent}>
-        <ThemedText style={styles.title}>Submit Proof</ThemedText>
-        
-        <ThemedText style={styles.subtitle}>Paste your proof code below:</ThemedText>
-        
+        <ThemedText style={styles.title}>Claim Proof</ThemedText>
+        <ThemedText style={styles.subtitle}>Enter your proof code to claim tokens:</ThemedText>
         <TextInput
           style={styles.input}
           value={proofText}
           onChangeText={setProofText}
-          placeholder="Paste proof code here"
+          placeholder="Enter proof code here"
           multiline={false}
           autoCapitalize="none"
           autoCorrect={false}
@@ -61,13 +58,14 @@ export default function SubmitProofScreen() {
             style={[styles.button, styles.submitButton]} 
             onPress={handleSubmitProof}
           >
-            <Text style={styles.submitButtonText}>Submit Proof</Text>
+            <Text style={styles.submitButtonText}>Claim Proof</Text>
           </TouchableOpacity>
         </View>
       </View>
     </View>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: {

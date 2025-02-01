@@ -41,6 +41,7 @@ export default function AddProofScreen() {
       console.error('Error loading pending proofs: ', error);
     }
   }
+
   const handleGenerateProof = async () => {
     const proofCode = generateProofCode(parseFloat(amount));
     const newProof = { amount: parseFloat(amount), proof: proofCode};
@@ -90,6 +91,7 @@ export default function AddProofScreen() {
     </View>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: {

@@ -6,6 +6,9 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { markProofAsSubmitted } from '@/services/proofService';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as Clipboard from 'expo-clipboard';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+const PENDING_PROOFS_KEY = 'pending_proofs';
+
 
 type RootStackParamList = {
    addProof: undefined;
@@ -13,13 +16,12 @@ type RootStackParamList = {
    historyProof: undefined;
 };
 
-type DownloadProofScreenRouteProp = RouteProp<RootStackParamList, 'downloadProof'>;
-
 type DownloadProofRouteProp = RouteProp<{
    params: {
      proofCode: string;
    }
 }, 'params'>;
+
 
 export default function DownloadProofScreen() {
   
@@ -28,25 +30,36 @@ export default function DownloadProofScreen() {
  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
  const handleCopyToClipboard = async () => {
-   try {
-     await Clipboard.setStringAsync(proofCode);
-     ToastAndroid.show('Proof code copied to clipboard!', ToastAndroid.SHORT);
-   } catch (error) {
-     console.error('Error copying to clipboard:', error);
-     ToastAndroid.show('Failed to copy proof code', ToastAndroid.SHORT);
-   }
- };
+    try {
+      await Clipboard.setStringAsync(proofCode);
+      ToastAndroid.show('Proof code copied to clipboard!', ToastAndroid.SHORT);
+    } catch (error) {
+      console.error('Error copying to clipboard:', error);
+      ToastAndroid.show('Failed to copy proof code', ToastAndroid.SHORT);
+    }
+};
 
  const handleDone = async () => {
    try {
      if (!proofCode) {
        throw new Error('No proof code provided');
      }
+
      await markProofAsSubmitted(proofCode);
-     navigation.navigate('historyProof');
+
+     //remove proof from pending proofs
+     const storedProofs = await AsyncStorage.getItem(PENDING_PROOFS_KEY);
+     if (storedProofs) {
+      const proofs = JSON.parse(storedProofs);
+      const updatedProofs = proofs.filter((proof: { proof: string }) => proof.proof !== proofCode);
+      await AsyncStorage.setItem(PENDING_PROOFS_KEY, JSON.stringify(updatedProofs));
+     }
+     
+     ToastAndroid.show('Proof generated successfully!', ToastAndroid.SHORT);
+     navigation.navigate('addProof');
    } catch (error) {
-     console.error('Error submitting proof:', error);
-     ToastAndroid.show('Failed to submit proof', ToastAndroid.SHORT);
+     console.error('Error storing proof:', error);
+     ToastAndroid.show('Failed to store proof', ToastAndroid.SHORT);
    }
  };
 
@@ -89,6 +102,7 @@ export default function DownloadProofScreen() {
    </View>
  );
 }
+
 
 const styles = StyleSheet.create({
  container: {

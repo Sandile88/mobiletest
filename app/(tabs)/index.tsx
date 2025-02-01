@@ -1,25 +1,17 @@
 import { Image, StyleSheet, View, useColorScheme } from "react-native";
-
-import { ParallaxScrollView } from "@/components/ParallaxScrollView";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import {
   useActiveAccount,
-  useConnect,
   useDisconnect,
   useActiveWallet,
   ConnectButton,
-  lightTheme,
-  ConnectEmbed,
 } from "thirdweb/react";
 import {
   getUserEmail,
-  hasStoredPasskey,
   inAppWallet,
 } from "thirdweb/wallets/in-app";
-import { chain, client } from "@/constants/thirdweb";
-import { shortenAddress } from "thirdweb/utils";
-import { ThemedButton } from "@/components/ThemedButton";
+import { client } from "@/constants/thirdweb";
 import { useEffect, useState } from "react";
 import { createWallet } from "thirdweb/wallets";
 import { baseSepolia, ethereum } from "thirdweb/chains";
@@ -31,6 +23,13 @@ import {
   FontAwesome5 
 } from '@expo/vector-icons';
 import { useRouter } from "expo-router";
+import { getProofBalance } from "@/services/proofService";
+
+interface BalanceDisplayProps {
+  label: string;
+  amount?: string;
+}
+
 
 const wallets = [
   inAppWallet({
@@ -75,100 +74,47 @@ const thirdwebAuth = createAuth({
 });
 
 
-export default function HomeScreen() {
-  const theme = useColorScheme();
-  const wallet = useActiveWallet();
-  const account = useActiveAccount();
-  const [email, setEmail] = useState<string>();
-  const { disconnect } = useDisconnect();
-  const router = useRouter();
+
+const BalanceDisplay: React.FC<BalanceDisplayProps> = ({ label, amount }) => {
+  const [balance, setBalance] = useState<string>("0.00");
 
   useEffect(() => {
-    if (wallet && wallet.id === "inApp") {
-      getUserEmail({ client }).then(setEmail);
+    const loadBalance = async () => {
+      try {
+        if (label === "Proof Balance") {
+          const proofBalance = await getProofBalance();
+          const formattedBalance = Number.isFinite(proofBalance) ? 
+            proofBalance.toFixed(2) : "0.00";
+          setBalance(formattedBalance);
+        } else {
+          setBalance(amount || "0.00");
+        }
+      } catch (error) {
+        console.error('Error loading balance:', error);
+        setBalance("0.00"); 
+      }
+    };
+
+    loadBalance();
+
+    // setting up an interval for proof balance updates
+    if (label === "Proof Balance") {
+      const interval = setInterval(loadBalance, 30000);
+      return () => clearInterval(interval);
     }
-  }, [wallet]);
+  }, [label, amount]);
+
+  const displayValue = label === "Proof Balance" ? 
+    `R${balance}` : 
+    balance;
 
   return (
-    <View style={styles.mainContainer}>
-    <View style={styles.header}>
-      <View style={styles.connectSection}>
-        <ConnectButton
-          client={client}
-          theme={theme || "dark"}
-          wallets={wallets}
-          chain={baseSepolia}
-        />
-        {/* <View style={styles.walletInfo}>
-          <CustomConnectUI />
-        </View> */}
-      </View>
-        {/* yet to change icons used */}
-        <View style={styles.headerIcons}>
-          <MaterialCommunityIcons
-            name="upload-outline"  size={24} 
-            color={theme === 'dark' ? '#fff' : '#000'}  
-            onPress={() => router.push("/addProof")} />
-          <MaterialCommunityIcons 
-            name="download-outline" size={24} 
-            color={theme === 'dark' ? '#fff' : '#000'} 
-            onPress={() => router.push("/submitProof")} /> 
-          <MaterialCommunityIcons 
-            name="history" size={24} 
-            color={theme === 'dark' ? '#fff' : '#000'} 
-            onPress={() => router.push("/historyProof")} /> 
-        </View>
-      </View>
-
-
-      <ThemedView style={styles.container}>
-        <View style={styles.profileSection}>
-          <View style={styles.avatarContainer}>
-            <ThemedText style={styles.avatarText}>JD</ThemedText>
-          </View>
-        </View>
-
-        <View style={styles.balanceGrid}>
-          <BalanceDisplay label="Balance" amount="0.00" />
-          <BalanceDisplay label="Proof Balance" amount="0.00" />
-          <BalanceDisplay label="Total Balance" amount="0.00" />
-        </View>
-
-        <View style={styles.actionButtonsContainer}>
-          <ActionButton 
-            iconName="paper-plane" 
-            iconFamily="FontAwesome5" 
-            label="Pay" 
-          />
-          <ActionButton 
-            iconName="wallet" 
-            iconFamily="Ionicons" 
-            label="Receive" 
-          />
-          <ActionButton 
-            iconName="arrow-down-circle" 
-            iconFamily="Ionicons" 
-            label="Deposit" 
-          />
-          <ActionButton 
-            iconName="arrow-up-circle" 
-            iconFamily="Ionicons" 
-            label="Withdraw" 
-          />
-        </View>
-
-        <ThemedView style={styles.assetsContainer}>
-          <ThemedText style={styles.assetsTitle}>Assets</ThemedText>
-          <View style={styles.assetsList}>
-            {assets.map((asset, index) => (
-              <AssetTile key={index} asset={asset} />
-            ))}
-          </View>
-        </ThemedView>
-      </ThemedView>
+    <View style={styles.balanceContainer}>
+      <ThemedText style={styles.balanceLabel}>{label}</ThemedText>
+      <ThemedText style={styles.balanceAmount}>{displayValue}</ThemedText>
     </View>
   );
-}
+};
 
 
 
@@ -216,15 +162,6 @@ const ActionButton = ({ iconName, iconFamily = "Ionicons", label }: {
 };
 
 
-const BalanceDisplay = ({ label, amount }: { label: string; amount: string }) => (
-  <View style={styles.balanceContainer}>
-    <ThemedText style={styles.balanceLabel}>{label}</ThemedText>
-    <ThemedText style={styles.balanceAmount}>{amount}</ThemedText>
-  </View>
-);
-
-
-
 const AssetTile: React.FC<{ asset: Asset }> = ({ asset }) => (
   <ThemedView style={styles.assetTile}>
     <View style={styles.assetLeftSection}>
@@ -247,32 +184,126 @@ const AssetTile: React.FC<{ asset: Asset }> = ({ asset }) => (
 
 
 
-// const CustomConnectUI = () => {
-//   const wallet = useActiveWallet();
-//   const account = useActiveAccount();
-//   const [email, setEmail] = useState<string | undefined>();
-//   const { disconnect } = useDisconnect();
-//   useEffect(() => {
-//     if (wallet && wallet.id === "inApp") {
-//       getUserEmail({ client }).then(setEmail);
-//     }
-//   }, [wallet]);
+export default function HomeScreen() {
+  const theme = useColorScheme();
+  const wallet = useActiveWallet();
+  const account = useActiveAccount();
+  const [email, setEmail] = useState<string>();
+  const { disconnect } = useDisconnect();
+  const router = useRouter();
+  const [balance, setBalance] = useState<string>("0.00");
+  const [proofBalance, setProofBalance] = useState<string>("0.00");
 
-//   return wallet && account ? (
-//     <View>
-//       <ThemedText>Connected as {shortenAddress(account.address)}</ThemedText>
-//       {email && <ThemedText type="subtext">{email}</ThemedText>}
-//       <View style={{ height: 16 }} />
-//       <ThemedButton onPress={() => disconnect(wallet)} title="Disconnect" />
-//     </View>
-//   ) : (
-//     <>
-//       {/* <ConnectWithGoogle />
-//       <ConnectWithMetaMask />
-//       <ConnectWithPasskey /> */}
-//     </>
-//   );
-// };
+  useEffect(() => {
+    if (wallet && wallet.id === "inApp") {
+      getUserEmail({ client }).then(setEmail);
+    }
+  }, [wallet]);
+
+
+  // adding effect to fetch proof balance
+  useEffect(() => {
+    const fetchProofBalance = async () => {
+      try {
+        const balance = await getProofBalance();
+        setProofBalance(balance.toFixed(2));
+      } catch (error) {
+        console.error('Error fetching proof balance:', error);
+        setProofBalance("0.00");
+      }
+    };
+
+    fetchProofBalance();
+    const interval = setInterval(fetchProofBalance, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const calculateTotalBalance = () => {
+    const balanceNum = parseFloat(balance || "0");
+    const proofBalanceNum = parseFloat(proofBalance || "0");
+    return (balanceNum + proofBalanceNum).toFixed(2);
+  }
+
+  return (
+    <View style={styles.mainContainer}>
+    <View style={styles.header}>
+      <View style={styles.connectSection}>
+        <ConnectButton
+          client={client}
+          theme={theme || "dark"}
+          wallets={wallets}
+          chain={baseSepolia}
+        />
+      </View>
+        {/* yet to change icons used */}
+        <View style={styles.headerIcons}>
+          <MaterialCommunityIcons
+            name="upload-outline"  size={24} 
+            color={theme === 'dark' ? '#fff' : '#000'}  
+            onPress={() => router.push("/addProof")} />
+          <MaterialCommunityIcons 
+            name="download-outline" size={24} 
+            color={theme === 'dark' ? '#fff' : '#000'} 
+            onPress={() => router.push("/submitProof")} /> 
+          <MaterialCommunityIcons 
+            name="history" size={24} 
+            color={theme === 'dark' ? '#fff' : '#000'} 
+            onPress={() => router.push("/historyProof")} /> 
+        </View>
+      </View>
+
+
+      <ThemedView style={styles.container}>
+        <View style={styles.profileSection}>
+          <View style={styles.avatarContainer}>
+            <ThemedText style={styles.avatarText}>JD</ThemedText>
+          </View>
+        </View>
+
+        <View style={styles.balanceGrid}>
+          <BalanceDisplay label="Balance" amount={balance} />
+          <BalanceDisplay label="Proof Balance" amount={proofBalance} />
+          <BalanceDisplay label="Total Balance" amount={calculateTotalBalance()} />
+        </View>
+
+        <View style={styles.actionButtonsContainer}>
+          <ActionButton 
+            iconName="paper-plane" 
+            iconFamily="FontAwesome5" 
+            label="Pay" 
+          />
+          <ActionButton 
+            iconName="wallet" 
+            iconFamily="Ionicons" 
+            label="Receive" 
+          />
+          <ActionButton 
+            iconName="arrow-down-circle" 
+            iconFamily="Ionicons" 
+            label="Deposit" 
+          />
+          <ActionButton 
+            iconName="arrow-up-circle" 
+            iconFamily="Ionicons" 
+            label="Withdraw" 
+          />
+        </View>
+
+        <ThemedView style={styles.assetsContainer}>
+          <ThemedText style={styles.assetsTitle}>Assets</ThemedText>
+          <View style={styles.assetsList}>
+            {assets.map((asset, index) => (
+              <AssetTile key={index} asset={asset} />
+            ))}
+          </View>
+        </ThemedView>
+      </ThemedView>
+    </View>
+  );
+}
+
+
+
 
 const styles = StyleSheet.create({
   mainContainer: {
@@ -296,15 +327,6 @@ const styles = StyleSheet.create({
     flex: 1,
     marginRight: 16,
   },
-  // walletInfo: {
-  //   position: 'absolute',
-  //   top: '100%',
-  //   left: 0,
-  //   right: 0,
-  //   backgroundColor: '#fff',
-  //   zIndex: 1,
-  //   paddingTop: 8,
-  // },
   headerIcons: {
     flexDirection: 'row',
     gap: 12,
