@@ -1,9 +1,12 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, TextInput, Button, FlatList, StyleSheet } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { generateProofCode } from '@/utils/proofUtils';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const PENDING_PROOFS_KEY = 'pending_proofs';
 
 type RootStackParamList = {
     addProof: undefined;
@@ -16,19 +19,36 @@ interface Proof {
     proof: string;
   }
 
-  
+
 export default function AddProofScreen() {
-    
   const [amount, setAmount] = useState('');
   const [pendingProofs, setPendingProofs] = useState<Proof[]>([]);
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
-  const handleGenerateProof = () => {
+
+  // loading pending proofs from AsyncStorage when the component mounts
+  useEffect(() => {
+    loadingPendingProofs();
+  }, []);
+
+  const loadingPendingProofs = async () => {
+    try {
+      const storedProofs = await AsyncStorage.getItem(PENDING_PROOFS_KEY);
+      if (storedProofs) {
+        setPendingProofs(JSON.parse(storedProofs));
+      }
+    } catch (error) {
+      console.error('Error loading pending proofs: ', error);
+    }
+  }
+  const handleGenerateProof = async () => {
     const proofCode = generateProofCode(parseFloat(amount));
-    setPendingProofs([
-      ...pendingProofs,
-      { amount: parseFloat(amount), proof: proofCode },
-    ]);
+    const newProof = { amount: parseFloat(amount), proof: proofCode};
+
+    // updating both the state and the AsyncStorage
+    const updatedProofs = [...pendingProofs, newProof];
+    setPendingProofs(updatedProofs);
+    await AsyncStorage.setItem(PENDING_PROOFS_KEY, JSON.stringify(updatedProofs));
     setAmount('');
   };
 
@@ -39,15 +59,18 @@ export default function AddProofScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.inputContainer}>
-        <ThemedText>Enter Amount to Generate Proof</ThemedText>
+        <ThemedText style={styles.title}>Enter Amount to Generate Proof</ThemedText>
         <TextInput
           style={styles.input}
           value={amount}
           onChangeText={setAmount}
           keyboardType="numeric"
+          placeholder="Entet amount"
         />
-        <Button title="Generate Proof" onPress={handleGenerateProof} />
+        <Button title="Generate Proof" onPress={handleGenerateProof} 
+        disabled={!amount || isNaN(parseFloat(amount))}/>
       </View>
+
       {pendingProofs.length > 0 && (
         <View style={styles.pendingProofsContainer}>
           <ThemedText style={styles.title}>Pending Proofs</ThemedText>
@@ -56,7 +79,7 @@ export default function AddProofScreen() {
             keyExtractor={(item) => item.proof}
             renderItem={({ item }) => (
               <View style={styles.proofItem}>
-                <ThemedText style={styles.proofAmount}>{item.amount} tokens</ThemedText>
+                <ThemedText style={styles.proofAmount}>{item.amount} uzar</ThemedText>
                 <Button title="View" onPress={() => handleViewProof(item)} />
               </View>
             )}
@@ -85,6 +108,7 @@ const styles = StyleSheet.create({
     height: 40,
     borderWidth: 1,
     marginVertical: 16,
+    paddingHorizontal: 8,
   },
   pendingProofsContainer: {
     width: '100%',

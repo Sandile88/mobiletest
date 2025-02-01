@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, FlatList, StyleSheet } from 'react-native';
+import { View, FlatList, StyleSheet, Text } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import QRCode from 'react-native-qrcode-svg';
 import { getSubmittedProofs } from '@/services/proofService';
@@ -12,46 +12,77 @@ interface Proof {
 
 export default function HistoryProofScreen() {
     const [proofHistory, setProofHistory] = useState<Proof[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
         const fetchProofHistory = async () => {
           try {
+            setIsLoading(true);
             const history = await getSubmittedProofs();
-            setProofHistory(history || []);
+            setProofHistory(Array.isArray(history) ? history : []);
           } catch (error) {
             console.error('Error fetching proof history:', error);
             setProofHistory([]);
+          } finally {
+            setIsLoading(false);
           }
         };
         fetchProofHistory();
       }, []);
 
-  const renderProofItem = ({ item }: { item: Proof }) => (
-    <View style={styles.proofItem}>
-      <QRCode value={item.proof} size={60} />
-      <ThemedText style={styles.proofDate}>{item.date}</ThemedText>
-      <ThemedText style={styles.proofAmount}>{item.amount} tokens</ThemedText>
-    </View>
-  );
 
-  return (
-    <View style={styles.container}>
-      <ThemedText style={styles.title}>Proof History</ThemedText>
-      <FlatList
-        data={proofHistory}
-        keyExtractor={(item) => item.proof}
-        renderItem={renderProofItem}
-        contentContainerStyle={styles.listContainer}
-      />
-    </View>
-  );
-}
-
-
+      const renderProofItem = ({ item }: { item: Proof }) => {
+        if (!item || !item.proof) return null;
+        
+        return (
+          <View style={styles.proofItem}>
+            <QRCode value={item.proof} size={60} />
+            <ThemedText style={styles.proofDate}>
+              {new Date(item.date).toLocaleDateString()}
+            </ThemedText>
+            <ThemedText style={styles.proofAmount}>
+              {item.amount} tokens
+            </ThemedText>
+          </View>
+        );
+      };
+    
+      if (isLoading) {
+        return (
+          <View style={[styles.container, styles.centerContent]}>
+            <ThemedText>Loading...</ThemedText>
+          </View>
+        );
+      }
+    
+      return (
+        <View style={styles.container}>
+          <ThemedText style={styles.title}>Proof History</ThemedText>
+          {proofHistory.length === 0 ? (
+            <View style={styles.centerContent}>
+              <ThemedText>No proof history available</ThemedText>
+            </View>
+          ) : (
+            <FlatList
+              data={proofHistory}
+              keyExtractor={(item) => item.proof}
+              renderItem={renderProofItem}
+              contentContainerStyle={styles.listContainer}
+            />
+          )}
+        </View>
+      );
+    }
+    
 const styles = StyleSheet.create({
     container: {
       flex: 1,
       backgroundColor: 'white',
+    },
+    centerContent: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
     },
     title: {
       fontSize: 18,
