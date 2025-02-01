@@ -22,6 +22,7 @@ type DownloadProofRouteProp = RouteProp<{
 }, 'params'>;
 
 export default function DownloadProofScreen() {
+  
  const { params } = useRoute<DownloadProofRouteProp>();
  const { proofCode } = params;
  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
