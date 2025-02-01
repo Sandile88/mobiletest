@@ -105,7 +105,7 @@ export default function HomeScreen() {
       </View>
         {/* yet to change icons used */}
         <View style={styles.headerIcons}>
-          <MaterialCommunityIcons 
+          <MaterialCommunityIcons
             name="upload-outline"  size={24} 
             color={theme === 'dark' ? '#fff' : '#000'}  
             onPress={() => router.push("/addProof")} />
