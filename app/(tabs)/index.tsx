@@ -112,7 +112,7 @@ export default function HomeScreen() {
           <MaterialCommunityIcons 
             name="download-outline" size={24} 
             color={theme === 'dark' ? '#fff' : '#000'} 
-            onPress={() => router.push("/downloadProof")} /> 
+            onPress={() => router.push("/submitProof")} /> 
           <MaterialCommunityIcons 
             name="history" size={24} 
             color={theme === 'dark' ? '#fff' : '#000'} 

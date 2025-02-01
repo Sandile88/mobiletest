@@ -36,6 +36,7 @@ export default function RootLayout() {
 				<Stack>
 					<Stack.Screen name="(tabs)" options={{ headerShown: false }} />
 					<Stack.Screen name="addProof" options={{ title: "Add Proof" }} />
+					<Stack.Screen name="submitProof" options={{ title: "SubmitProof" }} />
 					<Stack.Screen name="downloadProof" options={{ title: "Download Proof" }} />
 					<Stack.Screen name="historyProof" options={{ title: "History Proof" }} />
 					<Stack.Screen name="+not-found" />
