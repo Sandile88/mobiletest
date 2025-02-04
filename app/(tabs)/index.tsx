@@ -33,50 +33,6 @@ interface BalanceDisplayProps {
   label: string;
   amount?: number;
 }
-
-
-// const wallets = [
-//   inAppWallet({
-//     auth: {
-//       options: [
-//         "google",
-//         "facebook",
-//         "discord",
-//         "telegram",
-//         "email",
-//         "phone",
-//         "passkey",
-//       ],
-//       passkeyDomain: "thirdweb.com",
-//     },
-//     smartAccount: {
-//       chain: baseSepolia,
-//       sponsorGas: true,
-//     },
-//   }),
-//   createWallet("io.metamask"),
-//   createWallet("com.coinbase.wallet", {
-//     appMetadata: {
-//       name: "Thirdweb RN Demo",
-//     },
-//     mobileConfig: {
-//       callbackURL: "https://thirdweb.com",
-//     },
-//     walletConfig: {
-//       options: "smartWalletOnly",
-//     },
-//   }),
-//   createWallet("me.rainbow"),
-//   createWallet("com.trustwallet.app"),
-//   createWallet("io.zerion.wallet"),
-// ];
-
-
-// const thirdwebAuth = createAuth({
-//   domain: "localhost:3000",
-//   client,
-// });
-
   
  
 
@@ -88,12 +44,11 @@ const BalanceDisplay: React.FC<BalanceDisplayProps> = ({ label, amount }) => {
       try {
         if (label === "Proof Balance") {
           const proofBalance = await getProofBalance();
-          // console.log("##", proofBalance);
-          // proofBalance
-          // const formattedBalance = Number.isFinite(proofBalance) ? 
-          //   proofBalance.toFixed(2) : "0.00";
-          setBalance(Number(toEther(BigInt(proofBalance.toString()))));
-          // console.log("//", proofBalance);
+          console.log("Proof balance", proofBalance);
+
+          const formattedBalance = Number(proofBalance) / Math.pow(10, 18);
+          console.log("Formatted proof balance:", formattedBalance);
+          setBalance(formattedBalance);
 
         } else {
           setBalance(amount || 0);
@@ -113,15 +68,11 @@ const BalanceDisplay: React.FC<BalanceDisplayProps> = ({ label, amount }) => {
     }
   }, [label, amount]);
 
-  // const displayValue = label === "Proof Balance" ? 
-  //   `R${balance}` : 
-  //   balance;
-
   return (
     <View style={styles.balanceContainer}>
       <ThemedText style={styles.balanceLabel}>{label}</ThemedText>
-      <ThemedText style={styles.balanceAmount}>R{balance.toFixed(2)}</ThemedText>
-    </View>
+ <ThemedText style={styles.balanceAmount}>R{balance.toFixed(2)}</ThemedText>
+ </View>
   );
 };
 
@@ -204,11 +155,7 @@ export default function HomeScreen() {
   const [proofBalance, setProofBalance] = useState<number>(0);
 
   const { chainId, uZarContractAddress } = networkConfig;
-
-// const account = useActiveAccount();
   const [selectedTab, setSelectedTab] = useState("buy");
-  // const [balance, setBalance] = useState(0);
-
   const handleTabChange = (tab: string) => {
     setSelectedTab(tab);
   };
@@ -229,17 +176,16 @@ export default function HomeScreen() {
       method: "function balanceOf(address) returns (uint256)",
       params: [account.address],
     });
-    console.log()
-    return balance;
+    return Number(toEther(balance));
   }
   
-
+  // fetches balance
   useEffect(() => {
     if (account) {
       userBalance().then((balance) => {
 
-        setBalance(Number(toEther(balance)));
-        console.log(balance);
+        setBalance(balance);
+        console.log("On chain User balance", balance);
 
       });
     }
@@ -258,8 +204,9 @@ export default function HomeScreen() {
     const fetchProofBalance = async () => {
       try {
         const balance = await getProofBalance();
-        // console.log("gg", balance);
         setProofBalance(Number(toEther(BigInt(balance.toString()))));
+        console.log("updated proof", balance);
+
       } catch (error) {
         console.error('Error fetching proof balance:', error);
         setProofBalance(0);
@@ -272,13 +219,9 @@ export default function HomeScreen() {
   }, []);
 
   const calculateTotalBalance = () => {
-    // const balanceNum = parseFloat(Number(toEther(balance)));
-    // const proofBalanceNum = parseFloat(Number(toEther(balance)));
-    // console.log("////", proofBalance);          
-    // console.log("....", balance);
-
-
-    return balance + proofBalance;
+    const total = balance + proofBalance;
+    console.log("total", total);
+    return total;
   }
 
   return (
@@ -292,7 +235,7 @@ export default function HomeScreen() {
             sponsorGas: true,
           }}
           supportedTokens={{
-            [chainId]: [
+            [sepolia.id]: [
               {
                 address: uZarContractAddress,
                 name: "Universel Zar",
@@ -306,7 +249,7 @@ export default function HomeScreen() {
           // chain={sepolia}
           detailsButton={{
             displayBalanceToken: {
-              [chainId]: uZarContractAddress, // token address to display balance for
+              [sepolia.id]: uZarContractAddress, // token address to display balance for
             },
           }}
         />
@@ -338,7 +281,7 @@ export default function HomeScreen() {
 
         <View style={styles.balanceGrid}>
           <BalanceDisplay label="Balance" amount={balance} />
-          <BalanceDisplay label="Proof Balance" amount={proofBalance} />
+          <BalanceDisplay label="Proof Balance" />
           <BalanceDisplay label="Total Balance" amount={calculateTotalBalance()} />
         </View>
 
