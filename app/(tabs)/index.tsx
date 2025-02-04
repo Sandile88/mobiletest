@@ -45,10 +45,8 @@ const BalanceDisplay: React.FC<BalanceDisplayProps> = ({ label, amount }) => {
         if (label === "Proof Balance") {
           const proofBalance = await getProofBalance();
           console.log("Proof balance", proofBalance);
-
-          const formattedBalance = Number(proofBalance) / Math.pow(10, 18);
-          console.log("Formatted proof balance:", formattedBalance);
-          setBalance(formattedBalance);
+          setBalance(proofBalance);
+          // setBalance(Number(toEther(BigInt(proofBalance.toString()))));
 
         } else {
           setBalance(amount || 0);
@@ -204,7 +202,8 @@ export default function HomeScreen() {
     const fetchProofBalance = async () => {
       try {
         const balance = await getProofBalance();
-        setProofBalance(Number(toEther(BigInt(balance.toString()))));
+        setProofBalance(balance);
+        // setProofBalance(Number(toEther(BigInt(balance.toString()))));
         console.log("updated proof", balance);
 
       } catch (error) {
@@ -214,13 +213,14 @@ export default function HomeScreen() {
     };
 
     fetchProofBalance();
+    // calculateTotalBalance();
     const interval = setInterval(fetchProofBalance, 30000);
     return () => clearInterval(interval);
   }, []);
 
   const calculateTotalBalance = () => {
     const total = balance + proofBalance;
-    console.log("total", total);
+    console.log("total balance", total);
     return total;
   }
 
