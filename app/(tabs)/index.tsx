@@ -14,7 +14,7 @@ import {
 import { client } from "@/constants/thirdweb";
 import { useEffect, useState } from "react";
 import { createWallet } from "thirdweb/wallets";
-import { baseSepolia, ethereum } from "thirdweb/chains";
+import { baseSepolia, ethereum, scrollSepoliaTestnet, sepolia } from "thirdweb/chains";
 import { createAuth } from "thirdweb/auth";
 import React from "react";
 import { 
@@ -24,74 +24,83 @@ import {
 } from '@expo/vector-icons';
 import { useRouter } from "expo-router";
 import { getProofBalance } from "@/services/proofService";
+import { thirdwebClient } from "@/config/client";
+import { networkConfig } from "@/config/networkConfig";
+import { defineChain, getContract, readContract, toEther } from "thirdweb";
+
 
 interface BalanceDisplayProps {
   label: string;
-  amount?: string;
+  amount?: number;
 }
 
 
-const wallets = [
-  inAppWallet({
-    auth: {
-      options: [
-        "google",
-        "facebook",
-        "discord",
-        "telegram",
-        "email",
-        "phone",
-        "passkey",
-      ],
-      passkeyDomain: "thirdweb.com",
-    },
-    smartAccount: {
-      chain: baseSepolia,
-      sponsorGas: true,
-    },
-  }),
-  createWallet("io.metamask"),
-  createWallet("com.coinbase.wallet", {
-    appMetadata: {
-      name: "Thirdweb RN Demo",
-    },
-    mobileConfig: {
-      callbackURL: "https://thirdweb.com",
-    },
-    walletConfig: {
-      options: "smartWalletOnly",
-    },
-  }),
-  createWallet("me.rainbow"),
-  createWallet("com.trustwallet.app"),
-  createWallet("io.zerion.wallet"),
-];
+// const wallets = [
+//   inAppWallet({
+//     auth: {
+//       options: [
+//         "google",
+//         "facebook",
+//         "discord",
+//         "telegram",
+//         "email",
+//         "phone",
+//         "passkey",
+//       ],
+//       passkeyDomain: "thirdweb.com",
+//     },
+//     smartAccount: {
+//       chain: baseSepolia,
+//       sponsorGas: true,
+//     },
+//   }),
+//   createWallet("io.metamask"),
+//   createWallet("com.coinbase.wallet", {
+//     appMetadata: {
+//       name: "Thirdweb RN Demo",
+//     },
+//     mobileConfig: {
+//       callbackURL: "https://thirdweb.com",
+//     },
+//     walletConfig: {
+//       options: "smartWalletOnly",
+//     },
+//   }),
+//   createWallet("me.rainbow"),
+//   createWallet("com.trustwallet.app"),
+//   createWallet("io.zerion.wallet"),
+// ];
 
 
-const thirdwebAuth = createAuth({
-  domain: "localhost:3000",
-  client,
-});
+// const thirdwebAuth = createAuth({
+//   domain: "localhost:3000",
+//   client,
+// });
 
-
+  
+ 
 
 const BalanceDisplay: React.FC<BalanceDisplayProps> = ({ label, amount }) => {
-  const [balance, setBalance] = useState<string>("0.00");
+  const [balance, setBalance] = useState<number>(0);
 
   useEffect(() => {
     const loadBalance = async () => {
       try {
         if (label === "Proof Balance") {
           const proofBalance = await getProofBalance();
-          const formattedBalance = Number.isFinite(proofBalance) ? 
-            proofBalance.toFixed(2) : "0.00";
-          setBalance(formattedBalance);
+          // console.log("##", proofBalance);
+          // proofBalance
+          // const formattedBalance = Number.isFinite(proofBalance) ? 
+          //   proofBalance.toFixed(2) : "0.00";
+          setBalance(Number(toEther(BigInt(proofBalance.toString()))));
+          // console.log("//", proofBalance);
+
         } else {
-          setBalance(amount || "0.00");
+          setBalance(amount || 0);
         }
       } catch (error) {
         console.error('Error loading balance:', error);
-        setBalance("0.00"); 
+        setBalance(0); 
       }
     };
 
@@ -104,14 +113,14 @@ const BalanceDisplay: React.FC<BalanceDisplayProps> = ({ label, amount }) => {
     }
   }, [label, amount]);
 
-  const displayValue = label === "Proof Balance" ? 
-    `R${balance}` : 
-    balance;
+  // const displayValue = label === "Proof Balance" ? 
+  //   `R${balance}` : 
+  //   balance;
 
   return (
     <View style={styles.balanceContainer}>
       <ThemedText style={styles.balanceLabel}>{label}</ThemedText>
-      <ThemedText style={styles.balanceAmount}>{displayValue}</ThemedText>
+      <ThemedText style={styles.balanceAmount}>R{balance.toFixed(2)}</ThemedText>
     </View>
   );
 };
@@ -191,8 +200,51 @@ export default function HomeScreen() {
   const [email, setEmail] = useState<string>();
   const { disconnect } = useDisconnect();
   const router = useRouter();
-  const [balance, setBalance] = useState<string>("0.00");
-  const [proofBalance, setProofBalance] = useState<string>("0.00");
+  const [balance, setBalance] = useState<number>(0);
+  const [proofBalance, setProofBalance] = useState<number>(0);
+
+  const { chainId, uZarContractAddress } = networkConfig;
+
+// const account = useActiveAccount();
+  const [selectedTab, setSelectedTab] = useState("buy");
+  // const [balance, setBalance] = useState(0);
+
+  const handleTabChange = (tab: string) => {
+    setSelectedTab(tab);
+  };
+
+  const uzarContract = getContract({
+    client: thirdwebClient,
+    chain: sepolia,
+    address: uZarContractAddress,
+  
+  });
+
+  const userBalance = async () => {
+    if (!account) {
+      throw new Error("Account is undefined");
+    }
+    const balance = await readContract({
+      contract: uzarContract,
+      method: "function balanceOf(address) returns (uint256)",
+      params: [account.address],
+    });
+    console.log()
+    return balance;
+  }
+  
+
+  useEffect(() => {
+    if (account) {
+      userBalance().then((balance) => {
+
+        setBalance(Number(toEther(balance)));
+        console.log(balance);
+
+      });
+    }
+
+  } )
 
   useEffect(() => {
     if (wallet && wallet.id === "inApp") {
@@ -206,10 +258,11 @@ export default function HomeScreen() {
     const fetchProofBalance = async () => {
       try {
         const balance = await getProofBalance();
-        setProofBalance(balance.toFixed(2));
+        // console.log("gg", balance);
+        setProofBalance(Number(toEther(BigInt(balance.toString()))));
       } catch (error) {
         console.error('Error fetching proof balance:', error);
-        setProofBalance("0.00");
+        setProofBalance(0);
       }
     };
 
@@ -219,9 +272,13 @@ export default function HomeScreen() {
   }, []);
 
   const calculateTotalBalance = () => {
-    const balanceNum = parseFloat(balance || "0");
-    const proofBalanceNum = parseFloat(proofBalance || "0");
-    return (balanceNum + proofBalanceNum).toFixed(2);
+    // const balanceNum = parseFloat(Number(toEther(balance)));
+    // const proofBalanceNum = parseFloat(Number(toEther(balance)));
+    // console.log("////", proofBalance);          
+    // console.log("....", balance);
+
+
+    return balance + proofBalance;
   }
 
   return (
@@ -230,9 +287,28 @@ export default function HomeScreen() {
       <View style={styles.connectSection}>
         <ConnectButton
           client={client}
+          accountAbstraction={{
+            chain: sepolia,
+            sponsorGas: true,
+          }}
+          supportedTokens={{
+            [chainId]: [
+              {
+                address: uZarContractAddress,
+                name: "Universel Zar",
+                symbol: "uZAR",
+                icon: "...",
+              },
+            ],
+          }}
           theme={theme || "dark"}
-          wallets={wallets}
-          chain={baseSepolia}
+          // wallets={wallets}
+          // chain={sepolia}
+          detailsButton={{
+            displayBalanceToken: {
+              [chainId]: uZarContractAddress, // token address to display balance for
+            },
+          }}
         />
       </View>
         {/* yet to change icons used */}
