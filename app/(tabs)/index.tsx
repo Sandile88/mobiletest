@@ -214,7 +214,7 @@ export default function HomeScreen() {
 
     fetchProofBalance();
     // calculateTotalBalance();
-    const interval = setInterval(fetchProofBalance, 30000);
+    const interval = setInterval(fetchProofBalance, 10000);
     return () => clearInterval(interval);
   }, []);
 

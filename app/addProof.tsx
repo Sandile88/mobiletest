@@ -60,57 +60,88 @@ export default function AddProofScreen() {
 
   const account = useActiveAccount();
 
-  const handleTransfer = async (  ) => {
-    let transaction;
+  // turn into a function
+ const handleTransfer = async (amount: number): Promise<boolean> => {
+  try {
+    if (!account) {
+      console.error('No account connected');
+      return false;
+    }
+
+    // Read current allowance
     const allowance = await readContract({
       contract: uzarContract,
       method: "function allowance(address,address)",
-      params: [account?.address || "", "0xC1245E360B99d22D146c513e41fcB8914BA0bA44"]
+      params: [
+        account.address,
+        "0xC1245E360B99d22D146c513e41fcB8914BA0bA44" // Consider moving this to a constant or config
+      ]
+    });
+    console.log("Current allowance:", allowance);
 
+    // Convert amount to Wei for comparison and approval
+    const amountInWei = toWei(amount.toString());
 
-    })
-    if (allowance < 10 && account) {
-      const transaction = prepareContractCall({
+    // If allowance is less than amount, approve more
+    if (allowance < amountInWei) {
+      const approvalTransaction = prepareContractCall({
         contract: uzarContract,
         method: "function approve(address,uint256)",
-        params: ["0xC1245E360B99d22D146c513e41fcB8914BA0bA44", BigInt(5)]})
-        const {transactionHash} = await sendTransaction({ transaction, account});
+        params: [
+          "0xC1245E360B99d22D146c513e41fcB8914BA0bA44",
+          amountInWei
+        ]
+      });
 
-      
+      const { transactionHash: approvalHash } = await sendTransaction({ 
+        transaction: approvalTransaction, 
+        account 
+      });
+      console.log("Approval transaction hash:", approvalHash);
     }
 
-    if (account) {
-      const transaction = prepareContractCall({
-        contract: uzarContract,
-        method: "function approve(address,uint256)",
-        params: ["0xC1245E360B99d22D146c513e41fcB8914BA0bA44", BigInt(5)]})
-        const {transactionHash} = await sendTransaction({ transaction, account});
-    }
+    // Send the transfer transaction
+    const transferTransaction = prepareContractCall({
+      contract: uzarContract,
+      method: "function transfer(address,uint256)",
+      params: [
+        "0xC1245E360B99d22D146c513e41fcB8914BA0bA44",
+        amountInWei
+      ]
+    });
 
+    const { transactionHash: transferHash } = await sendTransaction({ 
+      transaction: transferTransaction, 
+      account 
+    });
+    console.log("Transfer transaction hash:", transferHash);
 
-  //   if (account) {
-
-  //     const { transactionHash } = await sendTransaction({
-  //       transaction,
-  //       account,
-  //     });
-  //     console.log("Approval confirmation", transactionHash);
-  //   } else {
-  //     throw new Error("Account is undefined");
-  //   }
-   
+    return true;
+  } catch (error) {
+    console.error('Transfer failed:', error);
+    return false;
   }
-
+};
   const handleGenerateProof = async () => {
-    const proofCode = generateProofCode(parseFloat(amount));
-    const newProof = { amount: parseFloat(amount), proof: proofCode};
+  const amountNumber = parseFloat(amount);
+  
+  // First attempt the transfer
+  const transferSuccess = await handleTransfer(amountNumber);
+  
+  if (transferSuccess) {
+    const proofCode = generateProofCode(amountNumber);
+    const newProof = { amount: amountNumber, proof: proofCode };
 
-    // updating both the state and the AsyncStorage
+    // Update both the state and AsyncStorage
     const updatedProofs = [...pendingProofs, newProof];
     setPendingProofs(updatedProofs);
     await AsyncStorage.setItem(PENDING_PROOFS_KEY, JSON.stringify(updatedProofs));
     setAmount('');
-  };
+  } else {
+    // Handle transfer failure - you might want to show an error message to the user
+    console.error('Failed to process transfer');
+  }
+};
 
   const handleViewProof = (proof: Proof) => {
     navigation.navigate('downloadProof', { proofCode: proof.proof });
@@ -127,7 +158,8 @@ export default function AddProofScreen() {
           keyboardType="numeric"
           placeholder="Enter amount"
         />
-        <Button title="Generate Proof" onPress={handleGenerateProof} 
+        <Button title="Generate Proof" onPress={handleGenerateProof}
+
         disabled={!amount || isNaN(parseFloat(amount))}/>
       </View>
 
