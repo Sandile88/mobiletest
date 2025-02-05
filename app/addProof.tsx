@@ -5,6 +5,12 @@ import { generateProofCode } from '@/utils/proofUtils';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getContract, prepareContractCall, readContract, sendTransaction, toWei } from 'thirdweb';
+import { useActiveAccount } from 'thirdweb/react';
+import { thirdwebClient } from '@/config/client';
+import { sepolia } from 'thirdweb/chains';
+import { networkConfig } from '@/config/networkConfig';
+
 
 const PENDING_PROOFS_KEY = 'pending_proofs';
 
@@ -18,6 +24,16 @@ interface Proof {
     amount: number;
     proof: string;
   }
+
+  const { chainId, uZarContractAddress } = networkConfig;
+
+  const uzarContract = getContract({
+    client: thirdwebClient,
+    chain: sepolia,
+    address: uZarContractAddress,
+  
+  });
+
 
 
 export default function AddProofScreen() {
@@ -40,6 +56,49 @@ export default function AddProofScreen() {
     } catch (error) {
       console.error('Error loading pending proofs: ', error);
     }
+  }
+
+  const account = useActiveAccount();
+
+  const handleTransfer = async (  ) => {
+    let transaction;
+    const allowance = await readContract({
+      contract: uzarContract,
+      method: "function allowance(address,address)",
+      params: [account?.address || "", "0xC1245E360B99d22D146c513e41fcB8914BA0bA44"]
+
+
+    })
+    if (allowance < 10 && account) {
+      const transaction = prepareContractCall({
+        contract: uzarContract,
+        method: "function approve(address,uint256)",
+        params: ["0xC1245E360B99d22D146c513e41fcB8914BA0bA44", BigInt(5)]})
+        const {transactionHash} = await sendTransaction({ transaction, account});
+
+      
+    }
+
+    if (account) {
+      const transaction = prepareContractCall({
+        contract: uzarContract,
+        method: "function approve(address,uint256)",
+        params: ["0xC1245E360B99d22D146c513e41fcB8914BA0bA44", BigInt(5)]})
+        const {transactionHash} = await sendTransaction({ transaction, account});
+    }
+
+
+  //   if (account) {
+
+  //     const { transactionHash } = await sendTransaction({
+  //       transaction,
+  //       account,
+  //     });
+  //     console.log("Approval confirmation", transactionHash);
+  //   } else {
+  //     throw new Error("Account is undefined");
+  //   }
+   
   }
 
   const handleGenerateProof = async () => {
@@ -66,7 +125,7 @@ export default function AddProofScreen() {
           value={amount}
           onChangeText={setAmount}
           keyboardType="numeric"
-          placeholder="Entet amount"
+          placeholder="Enter amount"
         />
         <Button title="Generate Proof" onPress={handleGenerateProof} 
         disabled={!amount || isNaN(parseFloat(amount))}/>
