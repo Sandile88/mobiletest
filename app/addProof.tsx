@@ -11,7 +11,6 @@ import { thirdwebClient } from '@/config/client';
 import { scrollSepoliaTestnet, sepolia } from 'thirdweb/chains';
 import { networkConfig } from '@/config/networkConfig';
 import { ethers } from 'ethers';
-// import utils from '@/utils/$u';
 import $u from '@/utils/$u';
 
 
