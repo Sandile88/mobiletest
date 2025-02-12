@@ -35,6 +35,7 @@ export default function RootLayout() {
 			<ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
 				<Stack>
 					<Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+					<Stack.Screen name="transfer" options={{ title: "Transfer uZAR" }} />
 					<Stack.Screen name="addProof" options={{ title: "Add Proof" }} />
 					<Stack.Screen name="submitProof" options={{ title: "SubmitProof" }} />
 					<Stack.Screen name="downloadProof" options={{ title: "Download Proof" }} />

@@ -1,4 +1,4 @@
-import { Image, StyleSheet, View, useColorScheme } from "react-native";
+import { Image, Pressable, StyleSheet, View, useColorScheme } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import {
@@ -29,10 +29,10 @@ import { networkConfig } from "@/config/networkConfig";
 import { defineChain, getContract, readContract, toEther } from "thirdweb";
 import { ethers } from 'ethers';
 import $u from '@/utils/$u';
-import wc from '@/circuit/witness_calculator';
-import RNFS from 'react-native-fs';
-
-
+// import wc from '@/circuit/witness_calculator';
+// import RNFS from 'react-native-fs';
+// import { Asset } from "expo-asset";
+// import * as WebAssembly from "react-native-webassembly";
 
 
 
@@ -83,14 +83,14 @@ const BalanceDisplay: React.FC<BalanceDisplayProps> = ({ label, amount }) => {
 
 
 
-interface Asset {
+interface AssetToken {
   imageUrl: string;
   balance: number;
   name: string;
   value: number;
 }
 
-const assets: Asset[] = [
+const assets: AssetToken[] = [
   {
     balance: 0,
     imageUrl: require("@/assets/images/uzar.png"),
@@ -127,25 +127,37 @@ const ActionButton = ({ iconName, iconFamily = "Ionicons", label }: {
 };
 
 
-const AssetTile: React.FC<{ asset: Asset }> = ({ asset }) => (
-  <ThemedView style={styles.assetTile}>
-    <View style={styles.assetLeftSection}>
-      <Image 
-        source={typeof asset.imageUrl === 'string' ? { uri: asset.imageUrl } : asset.imageUrl}
-        style={styles.assetImage}
-      />
-      <View style={styles.assetInfo}>
-        <ThemedText style={styles.assetName}>{asset.name}</ThemedText>
-        <ThemedText style={styles.assetValue}>
-          {asset.name === 'uZAR' ? `R${asset.value.toFixed(2)}` : `$${asset.value.toFixed(2)}`}
-        </ThemedText>
+const AssetTile: React.FC<{ asset: AssetToken }> = ({ asset }) => {
+  const router = useRouter();
+
+  const handleAssetPress = () => {
+    if (asset.name === 'uZAR') {
+      router.push("transfer" as any);
+    }
+  };
+
+  return (
+    <Pressable onPress={handleAssetPress}>
+      <ThemedView style={styles.assetTile}>
+      <View style={styles.assetLeftSection}>
+        <Image 
+          source={typeof asset.imageUrl === 'string' ? { uri: asset.imageUrl } : asset.imageUrl}
+          style={styles.assetImage}
+        />
+        <View style={styles.assetInfo}>
+          <ThemedText style={styles.assetName}>{asset.name}</ThemedText>
+          <ThemedText style={styles.assetValue}>
+            {asset.name === 'uZAR' ? `R${asset.value.toFixed(2)}` : `$${asset.value.toFixed(2)}`}
+          </ThemedText>
+        </View>
       </View>
-    </View>
-    <ThemedText style={styles.assetBalance}>
-      {asset.name === 'uZAR' ? `R${asset.balance.toFixed(2)}` : `$${asset.balance.toFixed(2)}`}
-    </ThemedText>
-  </ThemedView>
-);
+      <ThemedText style={styles.assetBalance}>
+        {asset.name === 'uZAR' ? `R${asset.balance.toFixed(2)}` : `$${asset.balance.toFixed(2)}`}
+      </ThemedText>
+    </ThemedView>
+    </Pressable>
+  );
+};
 
 
 
@@ -226,37 +238,37 @@ export default function HomeScreen() {
   }, []);
 
 
-  async function loadWasm() {
-    try {
-      const path = `${RNFS.MainBundlePath}/deposit.wasm`; // Ensure `deposit.wasm` is inside assets
-      const wasmBase64 = await RNFS.readFile(path, 'base64');
+  // async function loadWasm() {
+  //   try {
+  //     const path = `${RNFS.MainBundlePath}/deposit.wasm`; // Ensure `deposit.wasm` is inside assets
+  //     const wasmBase64 = await RNFS.readFile(path, 'base64');
   
-      // Convert base64 to ArrayBuffer
-      const binaryString = atob(wasmBase64);
-      const len = binaryString.length;
-      const wasmArrayBuffer = new Uint8Array(len);
-      for (let i = 0; i < len; i++) {
-        wasmArrayBuffer[i] = binaryString.charCodeAt(i);
-      }
+  //     // Convert base64 to ArrayBuffer
+  //     const binaryString = atob(wasmBase64);
+  //     const len = binaryString.length;
+  //     const wasmArrayBuffer = new Uint8Array(len);
+  //     for (let i = 0; i < len; i++) {
+  //       wasmArrayBuffer[i] = binaryString.charCodeAt(i);
+  //     }
   
-      // return new Promise((resolve, reject)
-      return new Promise((resolve, reject) => {
-        WebAssembly.instantiate(wasmArrayBuffer.buffer)
-          .then((wasmModule) => {
-            resolve(wc(wasmModule.instance.exports));
-          })
-          .catch((err) => {
-            console.error("Error loading WASM:", err);
-            reject(err);
-          });
-      });
-    } catch (error) {
-      console.error("Failed to load WASM file:", error);
-      throw error;
-    }
-  }
+  //     // return new Promise((resolve, reject)
+  //     return new Promise((resolve, reject) => {
+  //       WebAssembly.instantiate(wasmArrayBuffer.buffer)
+  //         .then((wasmModule) => {
+  //           resolve(wc(wasmModule.instance.exports));
+  //         })
+  //         .catch((err) => {
+  //           console.error("Error loading WASM:", err);
+  //           reject(err);
+  //         });
+  //     });
+  //   } catch (error) {
+  //     console.error("Failed to load WASM file:", error);
+  //     throw error;
+  //   }
+  // }
 
-  console.log("Loading", loadWasm());
+  // console.log("Loading", loadWasm());
   
   const secretProof = async ()=> {
     const secret = ethers.BigNumber.from(ethers.utils.randomBytes(32)).toString();
@@ -280,6 +292,40 @@ export default function HomeScreen() {
       // console.log("nullifierHash" , nullifierHash);
   }
   console.log("Secret Proof", secretProof());
+
+
+  // const depositEther = async () => {
+  //   try {
+  //     const secret = ethers.BigNumber.from(ethers.utils.randomBytes(32)).toString();
+  //     const nullifier = ethers.BigNumber.from(ethers.utils.randomBytes(32)).toString();
+
+  //     const input = {
+  //       secret: $u.BN256ToBin(secret).split(""),
+  //       nullifier: $u.BN256ToBin(nullifier).split(""),
+  //     };
+  //     console.log("Proof Input:", input);
+
+  //     const wasmPath = require("../../../assets/deposit.wasm");
+  //     const response = await fetch(wasmPath);
+  //     const wasmArrayBuffer = await response.arrayBuffer();
+
+  //     const wasmModule = await WebAssembly.instantiate(wasmArrayBuffer);
+
+  //     const depositWC = await wc(wasmModule.instance.exports); 
+
+  //     const r = await depositWC.calculateWitness(input, 0); 
+  //     const commitment = r[1];
+  //     const nullifierHash = r[2];
+
+  //     console.log("Commitment:", commitment);
+  //     console.log("Nullifier:", nullifierHash);
+  //   } catch (e) {
+  //     console.error("Error in depositEther:", e);
+  //   }
+  // };
+
+  // console.log("Loading", depositEther());
+
 
 
  
@@ -515,5 +561,3 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 });
-
-// export default HomeScreen;

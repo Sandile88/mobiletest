@@ -88,7 +88,7 @@ export default function AddProofScreen() {
         contract: uzarContract,
         method: "function approve(address,uint256)",
         params: [
-          "0xC1245E360B99d22D146c513e41fcB8914BA0bA44",
+          "0xC1245E360B99d22D146c513e41fcB8914BA0bA44", //remove hard code of address
           amountInWei
         ]
       });
