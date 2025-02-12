@@ -27,6 +27,13 @@ import { getProofBalance } from "@/services/proofService";
 import { thirdwebClient } from "@/config/client";
 import { networkConfig } from "@/config/networkConfig";
 import { defineChain, getContract, readContract, toEther } from "thirdweb";
+import { ethers } from 'ethers';
+import $u from '@/utils/$u';
+import wc from '@/circuit/witness_calculator';
+import RNFS from 'react-native-fs';
+
+
+
 
 
 interface BalanceDisplayProps {
@@ -218,6 +225,64 @@ export default function HomeScreen() {
     return () => clearInterval(interval);
   }, []);
 
+
+  async function loadWasm() {
+    try {
+      const path = `${RNFS.MainBundlePath}/deposit.wasm`; // Ensure `deposit.wasm` is inside assets
+      const wasmBase64 = await RNFS.readFile(path, 'base64');
+  
+      // Convert base64 to ArrayBuffer
+      const binaryString = atob(wasmBase64);
+      const len = binaryString.length;
+      const wasmArrayBuffer = new Uint8Array(len);
+      for (let i = 0; i < len; i++) {
+        wasmArrayBuffer[i] = binaryString.charCodeAt(i);
+      }
+  
+      // return new Promise((resolve, reject)
+      return new Promise((resolve, reject) => {
+        WebAssembly.instantiate(wasmArrayBuffer.buffer)
+          .then((wasmModule) => {
+            resolve(wc(wasmModule.instance.exports));
+          })
+          .catch((err) => {
+            console.error("Error loading WASM:", err);
+            reject(err);
+          });
+      });
+    } catch (error) {
+      console.error("Failed to load WASM file:", error);
+      throw error;
+    }
+  }
+
+  console.log("Loading", loadWasm());
+  
+  const secretProof = async ()=> {
+    const secret = ethers.BigNumber.from(ethers.utils.randomBytes(32)).toString();
+      const nullifier = ethers.BigNumber.from(ethers.utils.randomBytes(32)).toString();
+  
+      const input = {
+        secret: $u.BN256ToBin(secret).split(""),
+        nullifier: $u.BN256ToBin(nullifier).split("")
+      };
+      console.log("Proof Input:", input);
+
+
+      // const depositWC = loadWasm();
+      // // console
+
+      // const r = await depositWC.calculateWitness(input, 0);
+      // const commitment = r[1];
+      // const nullifierHash = r[2];
+
+      // console.log("commitment" , commitment);
+      // console.log("nullifierHash" , nullifierHash);
+  }
+  console.log("Secret Proof", secretProof());
+
+
+ 
   const calculateTotalBalance = () => {
     const total = balance + proofBalance;
     console.log("total balance", total);
@@ -450,3 +515,5 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 });
+
+// export default HomeScreen;

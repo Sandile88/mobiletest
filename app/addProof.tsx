@@ -8,8 +8,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getContract, prepareContractCall, readContract, sendTransaction, toWei } from 'thirdweb';
 import { useActiveAccount } from 'thirdweb/react';
 import { thirdwebClient } from '@/config/client';
-import { sepolia } from 'thirdweb/chains';
+import { scrollSepoliaTestnet, sepolia } from 'thirdweb/chains';
 import { networkConfig } from '@/config/networkConfig';
+import { ethers } from 'ethers';
+// import utils from '@/utils/$u';
+import $u from '@/utils/$u';
 
 
 const PENDING_PROOFS_KEY = 'pending_proofs';
@@ -60,7 +63,6 @@ export default function AddProofScreen() {
 
   const account = useActiveAccount();
 
-  // turn into a function
  const handleTransfer = async (amount: number): Promise<boolean> => {
   try {
     if (!account) {
@@ -79,7 +81,6 @@ export default function AddProofScreen() {
     });
     console.log("Current allowance:", allowance);
 
-    // Convert amount to Wei for comparison and approval
     const amountInWei = toWei(amount.toString());
 
     // If allowance is less than amount, approve more
@@ -146,6 +147,18 @@ export default function AddProofScreen() {
   const handleViewProof = (proof: Proof) => {
     navigation.navigate('downloadProof', { proofCode: proof.proof });
   };
+
+  const secretProof = ()=> {
+    const secret = ethers.BigNumber.from(ethers.utils.randomBytes(32)).toString();
+      const nullifier = ethers.BigNumber.from(ethers.utils.randomBytes(32)).toString();
+  
+      const input = {
+        secret: $u.BN256ToBin(secret).split(""),
+        nullifier: $u.BN256ToBin(nullifier).split("")
+      };
+      console.log("Proof Input:", input);
+  }
+  console.log("Secret Proof", secretProof());
 
   return (
     <View style={styles.container}>
