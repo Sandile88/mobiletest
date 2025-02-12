@@ -60,75 +60,76 @@ export default function AddProofScreen() {
     }
   }
 
-  const account = useActiveAccount();
+//   const account = useActiveAccount();
 
- const handleTransfer = async (amount: number): Promise<boolean> => {
-  try {
-    if (!account) {
-      console.error('No account connected');
-      return false;
-    }
+//  const handleTransfer = async (amount: number): Promise<boolean> => {
+//   try {
+//     if (!account) {
+//       console.error('No account connected');
+//       return false;
+//     }
 
-    // Read current allowance
-    const allowance = await readContract({
-      contract: uzarContract,
-      method: "function allowance(address,address)",
-      params: [
-        account.address,
-        "0xC1245E360B99d22D146c513e41fcB8914BA0bA44" // Consider moving this to a constant or config
-      ]
-    });
-    console.log("Current allowance:", allowance);
+//     // Read current allowance
+//     const allowance = await readContract({
+//       contract: uzarContract,
+//       method: "function allowance(address,address)",
+//       params: [
+//         account.address,
+//         "0xC1245E360B99d22D146c513e41fcB8914BA0bA44" // Consider moving this to a constant or config
+//       ]
+//     });
+//     console.log("Current allowance:", allowance);
 
-    const amountInWei = toWei(amount.toString());
+//     const amountInWei = toWei(amount.toString());
 
-    // If allowance is less than amount, approve more
-    if (allowance < amountInWei) {
-      const approvalTransaction = prepareContractCall({
-        contract: uzarContract,
-        method: "function approve(address,uint256)",
-        params: [
-          "0xC1245E360B99d22D146c513e41fcB8914BA0bA44", //remove hard code of address
-          amountInWei
-        ]
-      });
+//     // If allowance is less than amount, approve more
+//     if (allowance < amountInWei) {
+//       const approvalTransaction = prepareContractCall({
+//         contract: uzarContract,
+//         method: "function approve(address,uint256)",
+//         params: [
+//           "0xC1245E360B99d22D146c513e41fcB8914BA0bA44", //remove hard code of address
+//           amountInWei
+//         ]
+//       });
 
-      const { transactionHash: approvalHash } = await sendTransaction({ 
-        transaction: approvalTransaction, 
-        account 
-      });
-      console.log("Approval transaction hash:", approvalHash);
-    }
+//       const { transactionHash: approvalHash } = await sendTransaction({ 
+//         transaction: approvalTransaction, 
+//         account 
+//       });
+//       console.log("Approval transaction hash:", approvalHash);
+//     }
 
-    // Send the transfer transaction
-    const transferTransaction = prepareContractCall({
-      contract: uzarContract,
-      method: "function transfer(address,uint256)",
-      params: [
-        "0xC1245E360B99d22D146c513e41fcB8914BA0bA44",
-        amountInWei
-      ]
-    });
+//     // Send the transfer transaction
+//     const transferTransaction = prepareContractCall({
+//       contract: uzarContract,
+//       method: "function transfer(address,uint256)",
+//       params: [
+//         "0xC1245E360B99d22D146c513e41fcB8914BA0bA44",
+//         amountInWei
+//       ]
+//     });
 
-    const { transactionHash: transferHash } = await sendTransaction({ 
-      transaction: transferTransaction, 
-      account 
-    });
-    console.log("Transfer transaction hash:", transferHash);
+//     const { transactionHash: transferHash } = await sendTransaction({ 
+//       transaction: transferTransaction, 
+//       account 
+//     });
+//     console.log("Transfer transaction hash:", transferHash);
 
-    return true;
-  } catch (error) {
-    console.error('Transfer failed:', error);
-    return false;
-  }
-};
+//     return true;
+//   } catch (error) {
+//     console.error('Transfer failed:', error);
+//     return false;
+//   }
+// };
+
   const handleGenerateProof = async () => {
   const amountNumber = parseFloat(amount);
   
   // First attempt the transfer
-  const transferSuccess = await handleTransfer(amountNumber);
+  // const transferSuccess = await handleTransfer(amountNumber);
   
-  if (transferSuccess) {
+  // if (transferSuccess) {
     const proofCode = generateProofCode(amountNumber);
     const newProof = { amount: amountNumber, proof: proofCode };
 
@@ -137,10 +138,10 @@ export default function AddProofScreen() {
     setPendingProofs(updatedProofs);
     await AsyncStorage.setItem(PENDING_PROOFS_KEY, JSON.stringify(updatedProofs));
     setAmount('');
-  } else {
-    // Handle transfer failure - you might want to show an error message to the user
-    console.error('Failed to process transfer');
-  }
+  // } else {
+  //   // Handle transfer failure - you might want to show an error message to the user
+  //   console.error('Failed to process transfer');
+  // }
 };
 
   const handleViewProof = (proof: Proof) => {
