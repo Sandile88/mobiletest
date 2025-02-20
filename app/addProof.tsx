@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, TextInput, Button, FlatList, StyleSheet } from 'react-native';
+import { View, TextInput, Button, FlatList, StyleSheet, ToastAndroid } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { generateProofCode } from '@/utils/proofUtils';
 import { useNavigation } from '@react-navigation/native';
@@ -142,6 +142,8 @@ export default function AddProofScreen() {
   //   // Handle transfer failure - you might want to show an error message to the user
   //   console.error('Failed to process transfer');
   // }
+
+  
 };
 
   const handleViewProof = (proof: Proof) => {

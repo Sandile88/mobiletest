@@ -1,6 +1,6 @@
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
-import { View, StyleSheet, TextInput, Pressable } from "react-native";
+import { View, StyleSheet, TextInput, Pressable, ToastAndroid } from "react-native";
 import { useState } from "react";
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { getContract, prepareContractCall, readContract, sendTransaction, toWei } from "thirdweb";
@@ -8,6 +8,11 @@ import { thirdwebClient } from "@/config/client";
 import { sepolia } from "thirdweb/chains";
 import { networkConfig } from "@/config/networkConfig";
 import { useActiveAccount } from "thirdweb/react";
+import { useRouter, Stack } from "expo-router";
+import { NativeStackNavigationProp } from "react-native-screens/lib/typescript/native-stack/types";
+
+
+type RootStackParamList = {};
 
 const { chainId, uZarContractAddress } = networkConfig;
 
@@ -21,21 +26,24 @@ const uzarContract = getContract({
 export default function TransferScreen() {
     const [amount, setAmount] = useState('');
     const [address, setAddress] = useState('');
-
+    const router = useRouter();
+    
     const account = useActiveAccount();
     
     const handleTransfer = async (amount: number): Promise<boolean> => {
       try {
         if (!account) {
           console.error('No account connected');
+          ToastAndroid.show('No account connected', ToastAndroid.SHORT);
           return false;
         }
 
         if (!address) {
           console.error('No recipient address provided');
+          ToastAndroid.show('No recipient address provided', ToastAndroid.SHORT);
+
           return false;
         }
-        // "0xC1245E360B99d22D146c513e41fcB8914BA0bA44" // Consider moving this to a constant or config
 
         // Read current allowance
         const allowance = await readContract({
@@ -77,12 +85,17 @@ export default function TransferScreen() {
             amountInWei
           ]
         });
-    
+        
+
         const { transactionHash: transferHash } = await sendTransaction({ 
           transaction: transferTransaction, 
           account 
         });
         console.log("Transfer transaction hash:", transferHash);
+
+
+        ToastAndroid.show(`Successfully sent ${amount} tokens!`, ToastAndroid.LONG);
+        router.back();
     
         return true;
       } catch (error) {

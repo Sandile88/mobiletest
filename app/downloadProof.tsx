@@ -14,6 +14,8 @@ type RootStackParamList = {
    addProof: undefined;
    downloadProof: { proofCode: string };
    historyProof: undefined;
+   index: undefined;
+
 };
 
 type DownloadProofRouteProp = RouteProp<{
@@ -56,7 +58,7 @@ export default function DownloadProofScreen() {
      }
      
      ToastAndroid.show('Proof generated successfully!', ToastAndroid.SHORT);
-     navigation.navigate('addProof');
+     navigation.navigate('index');
    } catch (error) {
      console.error('Error storing proof:', error);
      ToastAndroid.show('Failed to store proof', ToastAndroid.SHORT);
