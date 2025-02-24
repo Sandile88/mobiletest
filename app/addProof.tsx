@@ -1,20 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { View, TextInput, Button, FlatList, StyleSheet, ToastAndroid } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
-import { generateProofCode } from '@/utils/proofUtils';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getContract, prepareContractCall, readContract, sendTransaction, toWei } from 'thirdweb';
 import { useActiveAccount } from 'thirdweb/react';
-import { thirdwebClient } from '@/config/client';
-import { scrollSepoliaTestnet, sepolia } from 'thirdweb/chains';
-import { networkConfig } from '@/config/networkConfig';
 import { ethers } from 'ethers';
 import $u from '@/utils/$u';
-
-
-const PENDING_PROOFS_KEY = 'pending_proofs';
+import { getPendingProofs, transferToProofSystem } from '@/services/proofService';
 
 type RootStackParamList = {
     addProof: undefined;
@@ -27,21 +19,14 @@ interface Proof {
     proof: string;
   }
 
-  const { chainId, uZarContractAddress } = networkConfig;
-
-  const uzarContract = getContract({
-    client: thirdwebClient,
-    chain: sepolia,
-    address: uZarContractAddress,
-  
-  });
-
-
 
 export default function AddProofScreen() {
   const [amount, setAmount] = useState('');
   const [pendingProofs, setPendingProofs] = useState<Proof[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const account = useActiveAccount();
+
 
 
   // loading pending proofs from AsyncStorage when the component mounts
@@ -51,98 +36,49 @@ export default function AddProofScreen() {
 
   const loadingPendingProofs = async () => {
     try {
-      const storedProofs = await AsyncStorage.getItem(PENDING_PROOFS_KEY);
-      if (storedProofs) {
-        setPendingProofs(JSON.parse(storedProofs));
-      }
+      const storedProofs = await getPendingProofs();
+      setPendingProofs(storedProofs);
     } catch (error) {
       console.error('Error loading pending proofs: ', error);
+      ToastAndroid.show('Error loading proofs', ToastAndroid.SHORT);
+
     }
   }
 
-//   const account = useActiveAccount();
-
-//  const handleTransfer = async (amount: number): Promise<boolean> => {
-//   try {
-//     if (!account) {
-//       console.error('No account connected');
-//       return false;
-//     }
-
-//     // Read current allowance
-//     const allowance = await readContract({
-//       contract: uzarContract,
-//       method: "function allowance(address,address)",
-//       params: [
-//         account.address,
-//         "0xC1245E360B99d22D146c513e41fcB8914BA0bA44" // Consider moving this to a constant or config
-//       ]
-//     });
-//     console.log("Current allowance:", allowance);
-
-//     const amountInWei = toWei(amount.toString());
-
-//     // If allowance is less than amount, approve more
-//     if (allowance < amountInWei) {
-//       const approvalTransaction = prepareContractCall({
-//         contract: uzarContract,
-//         method: "function approve(address,uint256)",
-//         params: [
-//           "0xC1245E360B99d22D146c513e41fcB8914BA0bA44", //remove hard code of address
-//           amountInWei
-//         ]
-//       });
-
-//       const { transactionHash: approvalHash } = await sendTransaction({ 
-//         transaction: approvalTransaction, 
-//         account 
-//       });
-//       console.log("Approval transaction hash:", approvalHash);
-//     }
-
-//     // Send the transfer transaction
-//     const transferTransaction = prepareContractCall({
-//       contract: uzarContract,
-//       method: "function transfer(address,uint256)",
-//       params: [
-//         "0xC1245E360B99d22D146c513e41fcB8914BA0bA44",
-//         amountInWei
-//       ]
-//     });
-
-//     const { transactionHash: transferHash } = await sendTransaction({ 
-//       transaction: transferTransaction, 
-//       account 
-//     });
-//     console.log("Transfer transaction hash:", transferHash);
-
-//     return true;
-//   } catch (error) {
-//     console.error('Transfer failed:', error);
-//     return false;
-//   }
-// };
 
   const handleGenerateProof = async () => {
-  const amountNumber = parseFloat(amount);
-  
-  // First attempt the transfer
-  // const transferSuccess = await handleTransfer(amountNumber);
-  
-  // if (transferSuccess) {
-    const proofCode = generateProofCode(amountNumber);
-    const newProof = { amount: amountNumber, proof: proofCode };
+    try {
+      
+      setIsLoading(true);
+      const amountNumber = parseFloat(amount);
 
-    // Update both the state and AsyncStorage
-    const updatedProofs = [...pendingProofs, newProof];
-    setPendingProofs(updatedProofs);
-    await AsyncStorage.setItem(PENDING_PROOFS_KEY, JSON.stringify(updatedProofs));
-    setAmount('');
-  // } else {
-  //   // Handle transfer failure - you might want to show an error message to the user
-  //   console.error('Failed to process transfer');
-  // }
+      if (isNaN(amountNumber) || amountNumber <= 0) {
+        ToastAndroid.show('Please enter a valid amount', ToastAndroid.SHORT);
+        return;
+      }
+      
 
+      if (!account) {
+        ToastAndroid.show('Please connect your wallet', ToastAndroid.SHORT);
+        return;
+      }
+
+      const proofCode = await transferToProofSystem(amountNumber, account);
+
+      const newProof = { amount: amountNumber, proof: proofCode};
+      setPendingProofs([...pendingProofs, newProof]);
+      setAmount('');
+
+      ToastAndroid.show('Proof generated successfully', ToastAndroid.SHORT);
+    } catch (error) {
+      console.error('Error generating proof:', error);
+      ToastAndroid.show(
+        error instanceof Error ? error.message : 'Error generating proof',
+        ToastAndroid.SHORT
+      );
+    } finally {
+      setIsLoading(false);
+    }
   
 };
 
@@ -172,10 +108,12 @@ export default function AddProofScreen() {
           onChangeText={setAmount}
           keyboardType="numeric"
           placeholder="Enter amount"
+          editable={!isLoading}
         />
-        <Button title="Generate Proof" onPress={handleGenerateProof}
-
-        disabled={!amount || isNaN(parseFloat(amount))}/>
+        <Button 
+          title={isLoading ? "Generating..." : "Generate Proof"}
+          onPress={handleGenerateProof}
+          disabled={isLoading || !amount || isNaN(parseFloat(amount))}/>
       </View>
 
       {pendingProofs.length > 0 && (

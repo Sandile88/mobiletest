@@ -7,15 +7,10 @@ import {
   useActiveWallet,
   ConnectButton,
 } from "thirdweb/react";
-import {
-  getUserEmail,
-  inAppWallet,
-} from "thirdweb/wallets/in-app";
+import { getUserEmail } from "thirdweb/wallets/in-app";
 import { client } from "@/constants/thirdweb";
 import { useEffect, useState } from "react";
-import { createWallet } from "thirdweb/wallets";
-import { baseSepolia, ethereum, scrollSepoliaTestnet, sepolia } from "thirdweb/chains";
-import { createAuth } from "thirdweb/auth";
+import { sepolia } from "thirdweb/chains";
 import React from "react";
 import { 
   Ionicons,
@@ -41,48 +36,6 @@ interface BalanceDisplayProps {
   amount?: number;
 }
   
- 
-
-const BalanceDisplay: React.FC<BalanceDisplayProps> = ({ label, amount }) => {
-  const [balance, setBalance] = useState<number>(0);
-
-  useEffect(() => {
-    const loadBalance = async () => {
-      try {
-        if (label === "Proof Balance") {
-          const proofBalance = await getProofBalance();
-          console.log("Proof balance", proofBalance);
-          setBalance(proofBalance);
-          // setBalance(Number(toEther(BigInt(proofBalance.toString()))));
-
-        } else {
-          setBalance(amount || 0);
-        }
-      } catch (error) {
-        console.error('Error loading balance:', error);
-        setBalance(0); 
-      }
-    };
-
-    loadBalance();
-
-    // setting up an interval for proof balance updates
-    if (label === "Proof Balance") {
-      const interval = setInterval(loadBalance, 30000);
-      return () => clearInterval(interval);
-    }
-  }, [label, amount]);
-
-  return (
-    <View style={styles.balanceContainer}>
-      <ThemedText style={styles.balanceLabel}>{label}</ThemedText>
- <ThemedText style={styles.balanceAmount}>R{balance.toFixed(2)}</ThemedText>
- </View>
-  );
-};
-
-
-
 interface AssetToken {
   imageUrl: string;
   balance: number;
@@ -105,59 +58,6 @@ const assets: AssetToken[] = [
   },
 ];
 
-const ActionButton = ({ iconName, iconFamily = "Ionicons", label }: { 
-  iconName: string; 
-  iconFamily?: "Ionicons" | "MaterialCommunityIcons" | "FontAwesome5";
-  label: string;
-}) => {
-  const IconComponent = {
-    Ionicons,
-    MaterialCommunityIcons,
-    FontAwesome5
-  }[iconFamily];
-
-  return (
-    <View style={styles.actionButton}>
-      <View style={styles.actionIcon}>
-        <IconComponent name={iconName} size={24} color="#fff" />
-      </View>
-      <ThemedText style={styles.actionLabel}>{label}</ThemedText>
-    </View>
-  );
-};
-
-
-const AssetTile: React.FC<{ asset: AssetToken }> = ({ asset }) => {
-  const router = useRouter();
-
-  const handleAssetPress = () => {
-    if (asset.name === 'uZAR') {
-      router.push("transfer" as any);
-    }
-  };
-
-  return (
-    <Pressable onPress={handleAssetPress}>
-      <ThemedView style={styles.assetTile}>
-      <View style={styles.assetLeftSection}>
-        <Image 
-          source={typeof asset.imageUrl === 'string' ? { uri: asset.imageUrl } : asset.imageUrl}
-          style={styles.assetImage}
-        />
-        <View style={styles.assetInfo}>
-          <ThemedText style={styles.assetName}>{asset.name}</ThemedText>
-          <ThemedText style={styles.assetValue}>
-            {asset.name === 'uZAR' ? `R${asset.value.toFixed(2)}` : `$${asset.value.toFixed(2)}`}
-          </ThemedText>
-        </View>
-      </View>
-      <ThemedText style={styles.assetBalance}>
-        {asset.name === 'uZAR' ? `R${asset.balance.toFixed(2)}` : `$${asset.balance.toFixed(2)}`}
-      </ThemedText>
-    </ThemedView>
-    </Pressable>
-  );
-};
 
 
 
@@ -173,6 +73,7 @@ export default function HomeScreen() {
 
   const { chainId, uZarContractAddress } = networkConfig;
   const [selectedTab, setSelectedTab] = useState("buy");
+
   const handleTabChange = (tab: string) => {
     setSelectedTab(tab);
   };
@@ -195,47 +96,40 @@ export default function HomeScreen() {
     });
     return Number(toEther(balance));
   }
-  
-  // fetches balance
-  useEffect(() => {
-    if (account) {
-      userBalance().then((balance) => {
 
-        setBalance(balance);
-        console.log("On chain User balance", balance);
-
-      });
+   // Centralized balance fetching function
+   const fetchAllBalances = async () => {
+    try {
+      // Fetch on-chain balance
+      if (account) {
+        const onChainBalance = await userBalance();
+        console.log("Fetch all balances onChain Balance", onChainBalance);
+        setBalance(onChainBalance);
+      }
+      
+      // Fetch proof balance
+      const newProofBalance = await getProofBalance();
+      setProofBalance(newProofBalance);
+    } catch (error) {
+      console.error('Error updating balances:', error);
     }
+  };
 
-  } )
+
+   useEffect(() => {
+    // Load balances immediately when component mounts or account changes
+    fetchAllBalances();
+    
+    const intervalId = setInterval(fetchAllBalances, 10000);
+    
+    return () => clearInterval(intervalId);
+  }, [account]); // Re-run when account changes
 
   useEffect(() => {
     if (wallet && wallet.id === "inApp") {
       getUserEmail({ client }).then(setEmail);
     }
   }, [wallet]);
-
-
-  // adding effect to fetch proof balance
-  useEffect(() => {
-    const fetchProofBalance = async () => {
-      try {
-        const balance = await getProofBalance();
-        setProofBalance(balance);
-        // setProofBalance(Number(toEther(BigInt(balance.toString()))));
-        console.log("updated proof", balance);
-
-      } catch (error) {
-        console.error('Error fetching proof balance:', error);
-        setProofBalance(0);
-      }
-    };
-
-    fetchProofBalance();
-    // calculateTotalBalance();
-    const interval = setInterval(fetchProofBalance, 10000);
-    return () => clearInterval(interval);
-  }, []);
 
 
   // async function loadWasm() {
@@ -291,7 +185,7 @@ export default function HomeScreen() {
       // console.log("commitment" , commitment);
       // console.log("nullifierHash" , nullifierHash);
   }
-  console.log("Secret Proof", secretProof());
+  // console.log("Secret Proof", secretProof());
 
 
   // const depositEther = async () => {
@@ -334,6 +228,85 @@ export default function HomeScreen() {
     console.log("total balance", total);
     return total;
   }
+
+
+
+  const BalanceDisplay: React.FC<BalanceDisplayProps> = ({ label, amount }) => {
+    let displayAmount = 0;
+    
+    if (label === "Balance") {
+      displayAmount = balance;
+    } else if (label === "Proof Balance") {
+      displayAmount = proofBalance;
+    } else if (label === "Total Balance") {
+      displayAmount = calculateTotalBalance();
+    } else {
+      displayAmount = amount || 0;
+    }
+    
+    return (
+      <View style={styles.balanceContainer}>
+        <ThemedText style={styles.balanceLabel}>{label}</ThemedText>
+        <ThemedText style={styles.balanceAmount}>R{displayAmount.toFixed(2)}</ThemedText>
+      </View>
+    );
+  };
+
+
+const ActionButton = ({ iconName, iconFamily = "Ionicons", label }: {
+  iconName: string; 
+  iconFamily?: "Ionicons" | "MaterialCommunityIcons" | "FontAwesome5";
+  label: string;
+}) => {
+  const IconComponent = {
+    Ionicons,
+    MaterialCommunityIcons,
+    FontAwesome5
+  }[iconFamily];
+
+  return (
+    <View style={styles.actionButton}>
+      <View style={styles.actionIcon}>
+        <IconComponent name={iconName} size={24} color="#fff" />
+      </View>
+      <ThemedText style={styles.actionLabel}>{label}</ThemedText>
+    </View>
+  );
+};
+
+
+const AssetTile: React.FC<{ asset: AssetToken }> = ({ asset }) => {
+  const router = useRouter();
+
+  const handleAssetPress = () => {
+    if (asset.name === 'uZAR') {
+      router.push("transfer" as any);
+    }
+  };
+
+  return (
+    <Pressable onPress={handleAssetPress}>
+      <ThemedView style={styles.assetTile}>
+      <View style={styles.assetLeftSection}>
+        <Image 
+          source={typeof asset.imageUrl === 'string' ? { uri: asset.imageUrl } : asset.imageUrl}
+          style={styles.assetImage}
+        />
+        <View style={styles.assetInfo}>
+          <ThemedText style={styles.assetName}>{asset.name}</ThemedText>
+          <ThemedText style={styles.assetValue}>
+            {asset.name === 'uZAR' ? `R${asset.value.toFixed(2)}` : `$${asset.value.toFixed(2)}`}
+          </ThemedText>
+        </View>
+      </View>
+      <ThemedText style={styles.assetBalance}>
+        {asset.name === 'uZAR' ? `R${asset.balance.toFixed(2)}` : `$${asset.balance.toFixed(2)}`}
+      </ThemedText>
+    </ThemedView>
+    </Pressable>
+  );
+};
+
 
   return (
     <View style={styles.mainContainer}>
@@ -391,9 +364,9 @@ export default function HomeScreen() {
         </View>
 
         <View style={styles.balanceGrid}>
-          <BalanceDisplay label="Balance" amount={balance} />
+          <BalanceDisplay label="Balance"/>
           <BalanceDisplay label="Proof Balance" />
-          <BalanceDisplay label="Total Balance" amount={calculateTotalBalance()} />
+          <BalanceDisplay label="Total Balance" />
         </View>
 
         <View style={styles.actionButtonsContainer}>

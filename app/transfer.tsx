@@ -26,12 +26,14 @@ const uzarContract = getContract({
 export default function TransferScreen() {
     const [amount, setAmount] = useState('');
     const [address, setAddress] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
     const router = useRouter();
     
     const account = useActiveAccount();
     
     const handleTransfer = async (amount: number): Promise<boolean> => {
       try {
+        setIsLoading(true);
         if (!account) {
           console.error('No account connected');
           ToastAndroid.show('No account connected', ToastAndroid.SHORT);
@@ -101,6 +103,8 @@ export default function TransferScreen() {
       } catch (error) {
         console.error('Transfer failed:', error);
         return false;
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -131,7 +135,8 @@ export default function TransferScreen() {
                     />
                 </View>
 
-                <Pressable 
+                <Pressable
+                
                     style={[
                         styles.transferButton,
                         (!amount || !address || isNaN(parseFloat(amount))) ? styles.disabledButton : null
