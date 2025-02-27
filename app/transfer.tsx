@@ -120,11 +120,12 @@ export default function TransferScreen() {
                         value={address}
                         onChangeText={setAddress}
                         placeholderTextColor="#666"
+                        editable={!isLoading}
                     />
                 </View>
 
                 <View style={styles.inputContainer}>
-                    <MaterialCommunityIcons name="currency-usd" size={24} color="#666" />
+                    <MaterialCommunityIcons name="cash" size={24} color="#666" />
                     <TextInput
                         style={styles.input}
                         placeholder="Amount (uZAR)"
@@ -136,16 +137,17 @@ export default function TransferScreen() {
                 </View>
 
                 <Pressable
-                
                     style={[
                         styles.transferButton,
-                        (!amount || !address || isNaN(parseFloat(amount))) ? styles.disabledButton : null
+                        (!amount || !address || isNaN(parseFloat(amount)) || isLoading) ? styles.disabledButton : null
                       ]}
                     onPress={() => handleTransfer(parseFloat(amount))}
-                    disabled={!amount || !address || isNaN(parseFloat(amount))}
+                    disabled={!amount || !address || isNaN(parseFloat(amount)) || isLoading}
                         
                 >
-                <ThemedText style={styles.transferButtonText}>Transfer</ThemedText>
+                  <ThemedText style={styles.transferButtonText}>
+                    {isLoading ? "Transferring..." : "Transfer"}
+                  </ThemedText>
                 </Pressable>
             </View>
         </ThemedView>

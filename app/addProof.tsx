@@ -110,7 +110,8 @@ export default function AddProofScreen() {
           placeholder="Enter amount"
           editable={!isLoading}
         />
-        <Button 
+        <Button
+        
           title={isLoading ? "Generating..." : "Generate Proof"}
           onPress={handleGenerateProof}
           disabled={isLoading || !amount || isNaN(parseFloat(amount))}/>
