@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "OffConnectX",
-    "slug": "offconnectx",
+    "slug": "mobile-test",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -25,7 +25,7 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.thirdweb.demo",
+      "package": "ocx.app",
       "intentFilters": [
         {
           "autoVerify": true,
@@ -78,9 +78,9 @@
         "origin": false
       },
       "eas": {
-        "projectId": "d1d7acaf-b44a-4425-af35-620596448499"
+        "projectId": "c6c69a69-846e-477e-8769-f057dbeabf38"
       }
     },
-    "owner": "thirdweb"
+    "owner": "sandile88"
   }
 }

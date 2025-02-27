@@ -7,7 +7,7 @@ import {
   useActiveWallet,
   ConnectButton,
 } from "thirdweb/react";
-import { getUserEmail } from "thirdweb/wallets/in-app";
+import { getUserEmail, inAppWallet } from "thirdweb/wallets/in-app";
 import { client } from "@/constants/thirdweb";
 import { useEffect, useState } from "react";
 import { sepolia } from "thirdweb/chains";
@@ -24,6 +24,9 @@ import { networkConfig } from "@/config/networkConfig";
 import { defineChain, getContract, readContract, toEther } from "thirdweb";
 import { ethers } from 'ethers';
 import $u from '@/utils/$u';
+import { useConnect } from "thirdweb/react";
+import { createWallet } from "thirdweb/wallets";
+import { connectCoinbaseWalletSDK } from "thirdweb/dist/types/wallets/coinbase/coinbase-web";
 // import wc from '@/circuit/witness_calculator';
 // import RNFS from 'react-native-fs';
 // import { Asset } from "expo-asset";
@@ -70,7 +73,6 @@ export default function HomeScreen() {
   const router = useRouter();
   const [balance, setBalance] = useState<number>(0);
   const [proofBalance, setProofBalance] = useState<number>(0);
-
   const { chainId, uZarContractAddress } = networkConfig;
   const [selectedTab, setSelectedTab] = useState("buy");
 
@@ -312,9 +314,10 @@ const AssetTile: React.FC<{ asset: AssetToken }> = ({ asset }) => {
     <View style={styles.mainContainer}>
     <View style={styles.header}>
       <View style={styles.connectSection}>
+        <View style={styles.connectButtonWrapper}>
         <ConnectButton
-          client={client}
-          accountAbstraction={{
+            client={client}
+            accountAbstraction={{
             chain: sepolia,
             sponsorGas: true,
           }}
@@ -337,6 +340,8 @@ const AssetTile: React.FC<{ asset: AssetToken }> = ({ asset }) => {
             },
           }}
         />
+        </View>
+        
       </View>
         {/* yet to change icons used */}
         <View style={styles.headerIcons}>
@@ -354,6 +359,7 @@ const AssetTile: React.FC<{ asset: AssetToken }> = ({ asset }) => {
             onPress={() => router.push("/historyProof")} /> 
         </View>
       </View>
+
 
 
       <ThemedView style={styles.container}>
@@ -422,13 +428,15 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 30,
     backgroundColor: '#fff',
+    // paddingTop: 5,
+    // paddingBottom: 15,
     minHeight: 60,
   },
   connectSection: {
     flex: 1,
-    marginRight: 16,
+    marginRight: 20,
   },
   headerIcons: {
     flexDirection: 'row',
@@ -473,6 +481,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 32,
+  },
+  connectButtonWrapper: {
+    width: 160,
+    height: 50,
   },
   actionButton: {
     alignItems: 'center',
