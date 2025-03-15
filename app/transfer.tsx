@@ -3,7 +3,7 @@ import { ThemedView } from "@/components/ThemedView";
 import { View, StyleSheet, TextInput, Pressable, ToastAndroid } from "react-native";
 import { useState } from "react";
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { getContract, prepareContractCall, readContract, sendTransaction, toWei } from "thirdweb";
+import { defineChain, getContract, prepareContractCall, readContract, sendTransaction, toWei } from "thirdweb";
 import { thirdwebClient } from "@/config/client";
 import { sepolia } from "thirdweb/chains";
 import { networkConfig } from "@/config/networkConfig";
@@ -18,7 +18,7 @@ const { chainId, uZarContractAddress } = networkConfig;
 
 const uzarContract = getContract({
   client: thirdwebClient,
-  chain: sepolia,
+  chain: defineChain(1135),
   address: uZarContractAddress,
 
 });

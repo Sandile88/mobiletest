@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { generateProofCode } from '@/utils/proofUtils';
 import { networkConfig, proofSystemAdress } from '@/config/networkConfig';
 import { thirdwebClient } from '@/config/client';
-import { getContract, prepareContractCall, readContract, sendTransaction, toEther, toWei } from 'thirdweb';
+import { defineChain, getContract, prepareContractCall, readContract, sendTransaction, toEther, toWei } from 'thirdweb';
 import { sepolia } from 'thirdweb/chains';
 
 const PROOF_HISTORY_KEY = 'proof_history';
@@ -23,7 +23,7 @@ const { uZarContractAddress } = networkConfig;
 
 const uzarContract = getContract({
   client: thirdwebClient,
-  chain: sepolia,
+  chain:  defineChain(1135),
   address: uZarContractAddress,
 });
 

@@ -82,7 +82,7 @@ export default function HomeScreen() {
 
   const uzarContract = getContract({
     client: thirdwebClient,
-    chain: sepolia,
+    chain: defineChain(1135),
     address: uZarContractAddress,
   
   });
@@ -311,6 +311,7 @@ const AssetTile: React.FC<{ asset: AssetToken }> = ({ asset }) => {
 
 
   return (
+    // 0x153Cca0372b1b57a302Ef39BfB9795E274e4B307
     <View style={styles.mainContainer}>
     <View style={styles.header}>
       <View style={styles.connectSection}>
@@ -318,11 +319,11 @@ const AssetTile: React.FC<{ asset: AssetToken }> = ({ asset }) => {
         <ConnectButton
             client={client}
             accountAbstraction={{
-            chain: sepolia,
+            chain: defineChain(1135),
             sponsorGas: true,
           }}
           supportedTokens={{
-            [sepolia.id]: [
+            [1135]: [
               {
                 address: uZarContractAddress,
                 name: "Universel Zar",
@@ -336,7 +337,7 @@ const AssetTile: React.FC<{ asset: AssetToken }> = ({ asset }) => {
           // chain={sepolia}
           detailsButton={{
             displayBalanceToken: {
-              [sepolia.id]: uZarContractAddress, // token address to display balance for
+              [1135]: uZarContractAddress, // token address to display balance for
             },
           }}
         />
